@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { Layout, Menu, message } from 'antd';
-import { FileTextOutlined, DatabaseOutlined, SettingOutlined, BarChartOutlined } from '@ant-design/icons';
+import { Layout, Menu } from 'antd';
+import { FileTextOutlined, DatabaseOutlined, SettingOutlined, BarChartOutlined, SlidersOutlined } from '@ant-design/icons';
 import './App.css';
+import { ProjectProvider, useProjectContext } from './AppContext';
 
 // 导入页面组件
 import ProjectSettings from './pages/ProjectSettings';
@@ -13,21 +14,16 @@ import DataVisualization from './pages/DataVisualization';
 
 const { Header, Content, Footer, Sider } = Layout;
 
-function App() {
+function AppContent() {
     const [collapsed, setCollapsed] = useState(false);
-    const [projectStatus, setProjectStatus] = useState('待建模');
+    const { projectStatus } = useProjectContext();
 
     const handleMenuClick = (e) => {
         // 移除未使用的currentPage状态更新
     };
 
-    const updateProjectStatus = (status) => {
-        setProjectStatus(status);
-        message.success(`项目状态更新为: ${status}`);
-    };
-
     return (
-        <Router>
+            <Router>
             <Layout style={{ minHeight: '100vh' }}>
                 <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
                     <div className="logo" style={{ color: 'white', textAlign: 'center', padding: '16px', fontSize: '18px', fontWeight: 'bold' }}>
@@ -56,7 +52,7 @@ function App() {
                             },
                             {
                                 key: 'simulationSettings',
-                                icon: <SettingOutlined />,
+                                icon: <SlidersOutlined />,
                                 label: <Link to="/simulation-settings">仿真设置</Link>,
                             },
                             {
@@ -76,10 +72,10 @@ function App() {
                     <Content style={{ margin: '0 16px' }}>
                         <div className="site-layout-background" style={{ padding: 24, minHeight: 360 }}>
                             <Routes>
-                                <Route path="/" element={<ProjectSettings updateProjectStatus={updateProjectStatus} />} />
-                                <Route path="/ai-detection" element={<AIDetection updateProjectStatus={updateProjectStatus} />} />
-                                <Route path="/geometry-modeling" element={<GeometryModeling updateProjectStatus={updateProjectStatus} />} />
-                                <Route path="/simulation-settings" element={<SimulationSettings updateProjectStatus={updateProjectStatus} />} />
+                                <Route path="/" element={<ProjectSettings />} />
+                                <Route path="/ai-detection" element={<AIDetection />} />
+                                <Route path="/geometry-modeling" element={<GeometryModeling />} />
+                                <Route path="/simulation-settings" element={<SimulationSettings />} />
                                 <Route path="/data-visualization" element={<DataVisualization />} />
                             </Routes>
                         </div>
@@ -87,7 +83,15 @@ function App() {
                     <Footer style={{ textAlign: 'center' }}>齿轮损伤识别和剩余寿命预测系统 © {new Date().getFullYear()}</Footer>
                 </Layout>
             </Layout>
-        </Router>
+            </Router>
+    );
+}
+
+function App() {
+    return (
+        <ProjectProvider>
+            <AppContent />
+        </ProjectProvider>
     );
 }
 

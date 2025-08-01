@@ -37,13 +37,18 @@ function DataVisualization({ projectInfo, modelingResult, simulationResult, aiRe
         </div>
       </Card>
 
-      <Tabs activeKey={activeTabKey} onChange={setActiveTabKey} style={{ marginBottom: '24px' }}>
-          <Tabs.Tab key="project" tab="项目信息" />
-          <Tabs.Tab key="modeling" tab="几何建模" />
-          <Tabs.Tab key="simulation" tab="仿真结果" />
-          <Tabs.Tab key="ai" tab="AI识别" />
-          <Tabs.Tab key="visualization" tab="数据可视化" />
-        </Tabs>
+      <Tabs 
+        activeKey={activeTabKey} 
+        onChange={setActiveTabKey} 
+        style={{ marginBottom: '24px' }} 
+        items={[
+          { key: 'project', label: '项目信息' },
+          { key: 'modeling', label: '几何建模' },
+          { key: 'simulation', label: '仿真结果' },
+          { key: 'ai', label: 'AI识别' },
+          { key: 'visualization', label: '数据可视化' },
+        ]}
+      />
 
       {/* 项目信息面板 */}
       {activeTabKey === 'project' && (
