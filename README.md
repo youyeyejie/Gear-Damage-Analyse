@@ -1,12 +1,46 @@
-# Gear 项目运行指南
+# Gear Damage Analyse 项目运行指南
 
 ## 项目简介
-这是一个包含前后端的完整应用，前端基于React+Material-UI构建，后端使用Python开发。
+这是一个前后端分离的齿轮损伤识别和剩余寿命预测交互页面，前端基于React+Material-UI构建，后端使用Python开发。
 
 ## 环境要求
 - Python 3.12
 - Node.js v22.17.0
 - npm 11.4.2
+
+## 项目结构
+```
+// Directory tree (3 levels)
+├── .gitignore
+├── README.md
+├── data\
+│   ├── gear.json
+│   └── model\
+├── backend\
+│   ├── main.py
+│   └── requirements.txt
+└── frontend\
+    ├── README.md
+    ├── package-lock.json
+    ├── package.json
+    ├── public\
+    └── src\
+        ├── App.css
+        ├── App.js
+        ├── App.test.js
+        ├── AppContext.js
+        ├── index.css
+        ├── index.js
+        ├── logo.svg
+        ├── reportWebVitals.js
+        ├── setupTests.js
+        └── pages\
+            ├── ProjectSettings.js
+            ├── AIDetection.js
+            ├── GeometryModeling.js
+            ├── SimulationSettings.js
+            └── DataVisualization.js
+```
 
 ## 后端运行步骤
 1. 进入后端目录
@@ -58,8 +92,20 @@
     - [Ant Design](https://ant-design.antgroup.com/components/overview-cn/)
 
 
-## 要求
+## 交互页面要求
 - 导航栏（顶部或侧边）：项目设置&日志/下载、AI识别、几何建模、仿真设置、数据结果展示
+
+> **需要实现的文件**:
+> - backend/
+>     - main.py
+> - frontend/src/
+>     - AppContext.js
+>     - pages/
+>         - ProjectSettings.js
+>         - AIDetection.js
+>         - GeometryModeling.js
+>         - SimulationSettings.js
+>         - DataVisualization.js
 
 ### 页面1：项目设置&日志/下载
 - 创建项目
