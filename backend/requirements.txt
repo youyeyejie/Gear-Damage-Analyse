@@ -1,0 +1,4 @@
+Flask==2.0.1
+Flask-CORS==3.0.10
+Pillow==10.0.0
+Werkzeug==2.0.1
