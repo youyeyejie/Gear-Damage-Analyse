@@ -8,7 +8,8 @@ const { Option } = Select;
 
 function ProjectSettings() {
     const [form] = Form.useForm();
-    const { setSelectedLogType, filteredLogs, currentProject, createProject, downloadData, downloadFile } = useProjectContext();
+    const { setSelectedLogType, filteredLogs, currentProject,
+        createProject, downloadData, downloadFile } = useProjectContext();
 
     const handleCreateProject = async (values) => {
         try {

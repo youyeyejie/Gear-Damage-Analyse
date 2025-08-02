@@ -9,7 +9,7 @@ const { Option } = Select;
 function AIDetection() {
     const { currentProject, updateProjectStatus, uploadData, 
         setUploadData, uploadFileLog, detectionResult, updateDetectionResult, 
-        addDownloadFile, downloadFile, downloadData } = useProjectContext();
+        addDownloadFile, downloadFile } = useProjectContext();
     const [isDetecting, setIsDetecting] = useState(false);
     const [precision, setPrecision] = useState('medium');
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -136,27 +136,25 @@ function AIDetection() {
                 updateProjectStatus('识别完成');
 
                 // 添加报告到下载列表
-                const timestamp = Date.now();
+                
+                // 添加报告到下载列表
                 const reportFile = {
-                    id: timestamp,
+                    id: Date.now(),
                     name: resData.data.report.name,
                     type: 'AI识别报告',
                     size: resData.data.report.size,
                     time: new Date().toLocaleString()
                 };
                 addDownloadFile(reportFile);
-                console.log('添加报告文件到downloadData:', reportFile);
-                // 添加热力图到下载列表
+                
                 const heatmapFile = {
-                    id: timestamp + 1,  // 确保ID唯一
+                    id: Date.now(),
                     name: resData.data.heatmap.name,
                     type: 'AI识别热力图',
                     size: resData.data.heatmap.size,
                     time: new Date().toLocaleString()
                 };
                 addDownloadFile(heatmapFile);
-                console.log('添加热力图文件到downloadData:', heatmapFile);
-                console.log('当前downloadData长度:', downloadData.length);
                 message.success('AI识别成功');
             } else {
                 message.error(`识别失败: ${resData.msg}`);

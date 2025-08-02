@@ -46,9 +46,11 @@ const ProjectProvider = ({ children }) => {
 
     // 添加新日志
     const addLog = (newLog) => {
-        setLogs([newLog, ...logs]);
-        // 存储到sessionStorage
-        sessionStorage.setItem('logs', JSON.stringify([newLog, ...logs]));
+        setLogs(prevLogs => {
+            const updatedLogs = [newLog, ...prevLogs];
+            return updatedLogs;
+        });
+        sessionStorage.setItem('logs', JSON.stringify(logs));
     };
 
     // 筛选日志
@@ -112,9 +114,11 @@ const ProjectProvider = ({ children }) => {
 
     // 添加下载文件
     const addDownloadFile = (file) => {
-        setDownloadData([...downloadData, file]);
-        // 存储到sessionStorage
-        sessionStorage.setItem('downloadData', JSON.stringify([...downloadData, file]));
+        setDownloadData(prevDownloadData => {
+            const updatedDownloadData = [...prevDownloadData, file];
+            return updatedDownloadData;
+        });
+        sessionStorage.setItem('downloadData', JSON.stringify(downloadData));
     };
 
     // 下载文件
