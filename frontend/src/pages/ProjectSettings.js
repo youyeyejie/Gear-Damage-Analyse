@@ -4,17 +4,11 @@ import { Form, Input, Button, Select, Table, Tabs, message } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import '../App.css';
 
-// 确保message组件能正常工作的额外配置
-message.config({
-  top: 100,
-  duration: 3,
-  maxCount: 3,
-});
 const { Option } = Select;
 
 function ProjectSettings() {
     const [form] = Form.useForm();
-    const { filteredLogs, downloadData, currentProject, setSelectedLogType, createProject, downloadFile } = useProjectContext();
+    const { setSelectedLogType, filteredLogs, currentProject, createProject, downloadData, downloadFileLog } = useProjectContext();
 
     const handleCreateProject = async (values) => {
         try {
@@ -61,6 +55,7 @@ function ProjectSettings() {
             link.download = file.name;
             link.click();
             URL.revokeObjectURL(url);
+            downloadFileLog(file);
             message.success(`文件 ${file.name} 下载成功`);
         } catch (error) {
             message.error('下载文件失败：' + error.message); 
@@ -100,13 +95,13 @@ function ProjectSettings() {
 
             <div className="card">
                 <h2 style={{ marginBottom: '16px' }}>项目管理</h2>
-                <Form form={form} layout="vertical" onFinish={handleCreateProject}>
+                <Form form={form} layout="vertical" onFinish={handleCreateProject} initialValues={{ projectPath: 'Data' }}>
                     <div style={{ display: 'flex', gap: '16px' }}>
                         <Form.Item name="projectName" label="项目名称" rules={[{ required: true, message: '请输入项目名称' }]} style={{ flex: 1 }}>
                             <Input placeholder="请输入项目名称" />
                         </Form.Item>
                         <Form.Item name="projectPath" label="项目路径" rules={[{ required: true, message: '请输入项目路径' }]} style={{ flex: 2 }}>
-                            <Input placeholder="请输入项目路径 (e.g. C:/Users/Desktop)" defaultValue="Data" />
+                            <Input placeholder="请输入项目路径 (e.g. C:/Users/Desktop)" />
                         </Form.Item>
                     </div>
                     <div className="button-group" style={{ justifyContent: 'flex-start' }}>
