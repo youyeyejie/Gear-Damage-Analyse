@@ -3,41 +3,52 @@ import { message } from 'antd';
 
 // 创建Context
 const ProjectContext = createContext();
-
-// 模拟初始数据
-const initialLogData = [
-    // { id: 1, time: '2025-07-31 10:00:00', operation: '创建项目', type: '建模', description: '创建新项目：齿轮损伤识别测试' },
-    // { id: 2, time: '2025-07-31 10:05:00', operation: '上传图片', type: '识别', description: '上传损伤图片：gear_damage_1.jpg' },
-    // { id: 3, time: '2025-07-31 10:10:00', operation: '开始识别', type: '识别', description: '开始AI损伤识别' },
-    // { id: 4, time: '2025-07-31 10:15:00', operation: '识别完成', type: '识别', description: 'AI损伤识别完成，结果：齿面磨损' },
-    // { id: 5, time: '2025-07-31 10:20:00', operation: '开始建模', type: '建模', description: '根据识别结果开始几何建模' },
-    // { id: 6, time: '2025-07-31 10:30:00', operation: '建模完成', type: '建模', description: '几何建模完成，生成模型文件' },
-    // { id: 7, time: '2025-07-31 10:35:00', operation: '开始仿真', type: '仿真', description: '开始齿轮仿真分析' },
-    // { id: 8, time: '2025-07-31 11:00:00', operation: '仿真完成', type: '仿真', description: '齿轮仿真分析完成，生成报告' },
-];
-
-const initialDownloadData = [
-    // { id: 1, name: '1.step', type: '几何模型', size: '2.5MB', time: '2025-07-31 10:30:00' },
-    // { id: 2, name: '仿真报告.pdf', type: '仿真报告', size: '1.8MB', time: '2025-07-31 11:00:00' },
-    // { id: 3, name: 'AI预测结果.xlsx', type: 'AI预测结果', size: '0.5MB', time: '2025-07-31 10:15:00' },
-];
-
-const initialUploadData = [
-    // { id: 1, name: 'gear_damage_1.jpg', type: '图片', size: '1.2MB', time: '2025-07-31 10:05:00' },
-    // { id: 2, name: 'gear_damage_2.jpg', type: '图片', size: '1.5MB', time: '2025-07-31 10:10:00' },
-];
+const DetectionResult = {
+    damageType: '',
+    damageSeverity: '',
+    damageLocation: '',
+    damageArea: '',
+    damageDescription: '',
+    report: {
+        name: '',
+        size: '',
+    },
+    heatmap: {
+        name: '',
+        size: '',
+    },
+    precision: '',
+};
 
 // Context Provider组件
 const ProjectProvider = ({ children }) => {
-    const [logs, setLogs] = useState(initialLogData);
+    const [currentProject, setCurrentProject] = useState(() => {
+        const savedProject = sessionStorage.getItem('currentProject');
+        return savedProject ? JSON.parse(savedProject) : null;
+    });
+    const [logs, setLogs] = useState(() => {
+        const savedLogs = sessionStorage.getItem('logs');
+        return savedLogs ? JSON.parse(savedLogs) : [];
+    });
     const [selectedLogType, setSelectedLogType] = useState('all');
-    const [downloadData, setDownloadData] = useState(initialDownloadData);
-    const [uploadData, setUploadData] = useState(initialUploadData);
-    const [currentProject, setCurrentProject] = useState(null);
+    const [downloadData, setDownloadData] = useState(() => {
+            const savedDownloadData = sessionStorage.getItem('downloadData');
+            return savedDownloadData ? JSON.parse(savedDownloadData) : [];
+    });
+    const [uploadData, setUploadData] = useState(() => {
+            const savedUploadData = sessionStorage.getItem('uploadData');
+            return savedUploadData ? JSON.parse(savedUploadData) : [];
+    });
+    const [detectionResult, setDetectionResult] = useState(() => {
+        const savedDetectionResult = sessionStorage.getItem('detectionResult');
+        return savedDetectionResult ? JSON.parse(savedDetectionResult) : DetectionResult;
+    });
 
     // 添加新日志
     const addLog = (newLog) => {
         setLogs([newLog, ...logs]);
+        // 存储到sessionStorage
+        sessionStorage.setItem('logs', JSON.stringify([newLog, ...logs]));
     };
 
     // 筛选日志
@@ -52,11 +63,21 @@ const ProjectProvider = ({ children }) => {
             id: Date.now(),
             name: projectName,
             path: projectPath,
-            status: '待建模',
+            status: '待识别',
             createTime: new Date().toLocaleString(),
         };
 
         setCurrentProject(newProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(newProject));
+        // 清空上传数据
+        setUploadData([]);
+        sessionStorage.setItem('uploadData', JSON.stringify([]));
+        // 清空识别结果
+        setDetectionResult(DetectionResult);
+        sessionStorage.setItem('detectionResult', JSON.stringify(DetectionResult));
+        // 清空下载数据
+        setDownloadData([]);
+        sessionStorage.setItem('downloadData', JSON.stringify([]));
 
         // 记录日志
         const newLog = {
@@ -71,7 +92,10 @@ const ProjectProvider = ({ children }) => {
 
     // 更新项目状态
     const updateProjectStatus = (status) => {
-        setCurrentProject({ ...currentProject, status });
+        const updatedProject = { ...currentProject, status };
+        setCurrentProject(updatedProject);
+        // 更新sessionStorage中的项目状态
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
         message.success(`项目状态更新为: ${status}`);
 
         // 记录日志
@@ -89,25 +113,43 @@ const ProjectProvider = ({ children }) => {
     // 添加下载文件
     const addDownloadFile = (file) => {
         setDownloadData([...downloadData, file]);
+        // 存储到sessionStorage
+        sessionStorage.setItem('downloadData', JSON.stringify([...downloadData, file]));
     };
 
-    // 下载文件日志
-    const downloadFileLog = (file) => {
-        // 记录日志
-        const newLog = {
-            id: logs.length + 1,
-            time: new Date().toLocaleString(),
-            operation: '下载文件',
-            type: file.type === '几何模型' ? '建模' : file.type === '仿真报告' ? '仿真' : '识别',
-            description: `下载文件：${file.name}`,
-        };
-        addLog(newLog);
+    // 下载文件
+    const downloadFile = async (file) => {
+        try {
+            const response = await fetch(`/api/downloadFile?fileName=${file.name}`);
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('文件不存在');
+                } else {
+                    throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                }
+            }
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = file.name;
+            link.click();
+            URL.revokeObjectURL(url);
+             // 记录日志
+            const newLog = {
+                id: logs.length + 1,
+                time: new Date().toLocaleString(),
+                operation: '下载文件',
+                type: file.type === '几何模型' ? '建模' : file.type === '仿真报告' ? '仿真' : '识别',
+                description: `下载文件：${file.name}`,
+            };
+            addLog(newLog);
+            message.success(`文件 ${file.name} 下载成功`);
+        } catch (error) {
+            message.error('下载文件失败：' + error.message); 
+        }
     };
 
-    // 添加上传文件
-    const addUploadFile = (file) => {
-        setUploadData([...uploadData, file]);
-    };
 
     // 上传文件日志
     const uploadFileLog = (file) => {
@@ -121,7 +163,24 @@ const ProjectProvider = ({ children }) => {
         };
         addLog(newLog);
     };
-    
+
+    // 更新识别结果
+    const updateDetectionResult = (result) => {
+        setDetectionResult(result);
+        // 存储到sessionStorage
+        sessionStorage.setItem('detectionResult', JSON.stringify(result));
+        // 记录日志
+        const newLog = {
+            id: logs.length + 1,
+            time: new Date().toLocaleString(),
+            operation: '识别结果',
+            type: '识别',
+            description: `识别结果：${result.damageType}，${result.damageSeverity}，${result.damageLocation}，${result.damageDescription}`,
+        };
+        addLog(newLog);
+    };
+
+
     // 导出的context值
     const contextValue = {
         filteredLogs, //筛选出来日志列表
@@ -133,11 +192,14 @@ const ProjectProvider = ({ children }) => {
 
         downloadData, //下载文件列表
         addDownloadFile, //更新下载文件列表
-        downloadFileLog, //更新下载文日志
+        downloadFile, //下载文件
 
         uploadData, //上传文件列表
-        addUploadFile, //更新上传文件列表
+        setUploadData, //更新上传文件列表
         uploadFileLog, //更新上传文件日志
+
+        detectionResult, //识别结果
+        updateDetectionResult, //更新识别结果
     };
 
     return (

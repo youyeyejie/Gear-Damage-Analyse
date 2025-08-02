@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
+import time
+import random
 
 app = Flask(__name__)
 CORS(app)  # 解决跨域问题
@@ -58,9 +60,141 @@ def download_file():
     except Exception as e:
         return jsonify({"code": "500", "msg": str(e), "data": {}}), 500
 
-from flask import request  # 确保 request 已导入，若已有则可忽略
+@app.route('/api/uploadFile', methods=['POST'])
+def upload_file():
+    global full_path
+    if 'file' not in request.files:
+        return jsonify({"code": "400", "msg": "未提供文件", "data": {}}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"code": "400", "msg": "未提供文件名", "data": {}}), 400
 
+    # 确保项目路径已设置
+    if not full_path:
+        return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
 
+    # 保存文件
+    filename = file.filename.split('.')[0] + str(int(time.time())) + '.' + file.filename.split('.')[1]
+    file_path = os.path.join(full_path, filename)
+    try:
+        file.save(file_path)
+        return jsonify({
+            "code": "0",
+            "msg": "文件上传成功",
+            "data": {
+                "fileName": filename,
+                "filePath": file_path
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"code": "500", "msg": f"文件上传失败: {str(e)}", "data": {}}), 500
+
+@app.route('/api/deleteFile', methods=['POST'])
+def delete_file():
+    global full_path
+    try:
+        data = request.get_json()
+        if not data or 'fileName' not in data:
+            return jsonify({"code": "400", "msg": "未提供文件名", "data": {}}), 400
+        
+        file_name = data['fileName']
+        file_path = os.path.join(full_path, file_name)
+        
+        if not os.path.exists(file_path):
+            return jsonify({"code": "404", "msg": "文件不存在", "data": {}}), 404
+        
+        try:
+            os.remove(file_path)
+            return jsonify({
+                "code": "0",
+                "msg": "文件删除成功",
+                "data": {}
+            }), 200
+        except OSError as e:
+            return jsonify({"code": "500", "msg": f"文件删除失败: {str(e)}", "data": {}}), 500
+    except Exception as e:
+        return jsonify({"code": "500", "msg": str(e), "data": {}}), 500
+
+@app.route('/api/aiDetection', methods=['POST'])
+def ai_detection():
+    global full_path
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"code": "400", "msg": "无效的请求数据", "data": {}}), 400
+
+        # 检查图片文件名列表是否存在
+        if 'images' not in data:
+            return jsonify({"code": "400", "msg": "未提供图片文件名列表", "data": {}}), 400
+
+        images = data['images']
+        if not images or not isinstance(images, list):
+            return jsonify({"code": "400", "msg": "未提供有效图片文件名列表", "data": {}}), 400
+
+        # 获取识别精度参数
+        precision = data.get('precision', 'medium')  # 默认中等精度
+        if precision not in ['high', 'medium', 'low']:
+            precision = 'medium'
+
+        # 确保项目路径已设置
+        if not full_path:
+            return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
+        
+        # 图片路径列表
+        file_paths = []
+        for file in images:
+            file_path = os.path.join(full_path, file)
+            file_paths.append(file_path)
+
+        # 根据精度调整处理时间
+        if precision == 'high':
+            time.sleep(3)  # 高精度需要更长处理时间
+        elif precision == 'medium':
+            time.sleep(2)  # 中等精度
+        else:
+            time.sleep(1)  # 低精度
+
+        # 生成模拟结果
+        damage_types = ['齿面磨损', '齿根裂纹', '齿面胶合', '齿测点蚀']
+        result = {
+            "damageType": random.choice(damage_types),
+            "damageSeverity": f"{random.randint(10, 90)}%",
+            "damageArea": f"{random.randint(10, 90)}%",
+            "damageLocation": f"{random.randint(10, 90)}%",
+            "damageDescription": "这是一个模拟的损伤识别结果",
+            "precision": precision,
+        }
+
+        # 模拟热力图：提取第一张图片的文件名作为热力图
+        heatmap_filename = os.path.basename(file_paths[0])
+        result['heatmap'] = {
+            'name': heatmap_filename,
+            'size': "{:.2f}KB".format(os.path.getsize(file_paths[0]) / 1024),
+        }
+
+        # 创建一个模拟的报告文件
+        report_name = f"AI预测报告_{time.strftime('%Y%m%d%H%M%S')}.txt"
+        report_path = os.path.join(full_path, report_name)
+        with open(report_path, 'w') as f:
+            f.write("这是一个模拟的AI预测报告\n")
+            f.write("损伤类型："+result['damageType']+"\n")
+            f.write("损伤严重程度："+result['damageSeverity']+"\n")
+            f.write("损伤面积："+result['damageArea']+"\n")
+            f.write("损伤位置："+result['damageLocation']+"\n")
+            f.write("损伤描述："+result['damageDescription']+"\n")
+        
+        result['report'] = {
+            'name': report_name,
+            'size': "{:.2f}KB".format(os.path.getsize(report_path) / 1024),
+        }
+
+        return jsonify({
+            "code": "200",
+            "msg": "AI识别成功",
+            "data": result
+        }), 200
+    except Exception as e:
+        return jsonify({"code": "500", "msg": f"AI识别失败: {str(e)}", "data": {}}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

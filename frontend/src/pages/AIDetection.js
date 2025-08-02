@@ -1,177 +1,318 @@
 import React, { useState } from 'react';
-import { Button, Upload, message, Card, Row, Col } from 'antd';
-import { UploadOutlined, DownloadOutlined, PlayCircleOutlined } from '@ant-design/icons';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Button, Upload, message, Row, Col, Select, Image } from 'antd';
+import { DownloadOutlined, PlayCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { useProjectContext } from '../AppContext';
 import '../App.css';
 
-// 模拟损伤类型数据
-const damageTypes = [
-  { name: '齿面磨损', value: 45 },
-  { name: '齿根裂纹', value: 30 },
-  { name: '齿面胶合', value: 15 },
-  { name: '齿面点蚀', value: 10 },
-];
+const { Option } = Select;
 
-// 模拟热力图数据（简化版）
-const heatmapData = Array(10).fill().map(() => Array(10).fill().map(() => Math.random() * 100));
+function AIDetection() {
+    const { currentProject, updateProjectStatus, uploadData, 
+        setUploadData, uploadFileLog, detectionResult, updateDetectionResult, 
+        addDownloadFile, downloadFile, downloadData } = useProjectContext();
+    const [isDetecting, setIsDetecting] = useState(false);
+    const [precision, setPrecision] = useState('medium');
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState('');
 
-function AIDetection({ updateProjectStatus }) {
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [detectionResult, setDetectionResult] = useState(null);
-  const [isDetecting, setIsDetecting] = useState(false);
+    // 获取base64编码的图片用于预览
+    const getBase64 = file =>
+        new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
 
-  const handleUploadChange = ({ fileList }) => {
-    setUploadedFiles(fileList);
-  };
+    // 处理上传变化
+    const handleUploadChange = ({ fileList: newFileList, file: currentFile }) => {
+        setUploadData(newFileList); 
+        // 存储到sessionStorage
+        sessionStorage.setItem('uploadData', JSON.stringify(uploadData));
+    
+        // 文件开始上传前检查是否已建立项目
+        // 只在当前文件上传完成或失败时显示消息
+        if (currentFile) {
+            if (!currentProject) {
+                message.warning('请先创建项目');
+                setUploadData([]);
+                sessionStorage.setItem('uploadData', JSON.stringify(uploadData));
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 500);
+                return;
+            }
+            if (currentFile.status === "error") {
+                message.error(currentFile.response?.msg || '上传失败');
+            } else if (currentFile.status === "done") {
+                message.success(currentFile.response?.msg || '上传成功');
+                uploadFileLog(currentFile);
+            }
+        }
+    };
 
-  const handleStartDetection = async () => {
-    if (uploadedFiles.length === 0) {
-      message.error('请先上传损伤图片');
-      return;
-    }
+    // 删除上传文件
+    const handleRemoveFile = (file) => {
+        try {
+            // 向后端发送删除请求
+            fetch('http://localhost:5000/api/deleteFile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ fileName: file.response.data.fileName })
+            }).then(response => response.json())
+                .then(resData => {
+                    if (resData.code === '0') {
+                        // 删除成功，更新前端状态
+                        setUploadData(prev => prev.filter(f => f.uid !== file.uid));
+                        sessionStorage.setItem('uploadData', JSON.stringify(uploadData));
+                        message.success(`已删除文件: ${file.name}`);
+                    } else {
+                        message.error(`删除失败: ${resData.msg}`);
+                    }
+                });
+        } catch (error) {
+            message.error(`删除失败: ${error.message}`);
+        }
+    };
 
-    try {
-      setIsDetecting(true);
-      updateProjectStatus('识别中');
-      message.info('开始AI识别，请稍候...');
+    // 预览图片
+    const handlePreview = async (file) => {
+        if (!file.url && !file.preview) {
+            file.preview = await getBase64(file.originFileObj);
+        }
+        setPreviewImage(file.url || file.preview);
+        setPreviewOpen(true);
+    };
 
-      // 模拟AI识别过程
-      await new Promise(resolve => setTimeout(resolve, 3000));
+    // 开始AI识别
+    const handleStartDetection = async () => {
+        if (uploadData.length === 0) {
+            message.warning('请先上传至少一张图片');
+            return;
+        }
 
-      // 生成模拟结果
-      const result = {
-        damageType: '齿面磨损',
-        damageArea: '25.3%',
-        correlation: '0.87',
-        confidence: '92%',
-        heatmapData: heatmapData,
-        detectedAt: new Date().toLocaleString(),
-      };
+        setIsDetecting(true);
+        updateProjectStatus('识别中');
+        const images = [];
+        uploadData.map(file => images.push(file.response.data.fileName));
 
-      setDetectionResult(result);
-      setIsDetecting(false);
-      updateProjectStatus('待建模');
-      message.success('AI识别完成！');
-    } catch (error) {
-      setIsDetecting(false);
-      updateProjectStatus('待建模');
-      message.error('AI识别失败：' + error.message);
-    }
-  };
+        try {
+            const response = await fetch('http://localhost:5000/api/aiDetection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    precision: precision,
+                    images: images,
+                })
+            });
 
-  const handleDownloadReport = () => {
-    if (!detectionResult) {
-      message.error('请先完成AI识别');
-      return;
-    }
+            const resData = await response.json();
+            setIsDetecting(false);
 
-    message.success('开始下载AI预测报告...');
-  };
+            if (resData.code === '200') {
+                // 识别成功，更新结果
+                updateDetectionResult({
+                    damageType: resData.data.damageType,
+                    damageSeverity: resData.data.damageSeverity,
+                    damageLocation: resData.data.damageLocation,
+                    damageArea: resData.data.damageArea,
+                    damageDescription: resData.data.damageDescription,
+                    report: {
+                        name: resData.data.report.name,
+                        size: resData.data.report.size,
+                    },
+                    heatmap: {
+                        name: resData.data.heatmap.name,
+                        size: resData.data.heatmap.size,
+                    },
+                    precision: resData.data.precision,
+                });
 
-  const uploadButton = (
-    <div>
-      <UploadOutlined />
-      <div style={{ marginTop: 8 }}>点击上传</div>
-    </div>
-  );
+                // 更新项目状态
+                updateProjectStatus('识别完成');
 
-  // 渲染热力图（简化版）
-  const renderHeatmap = () => {
-    if (!detectionResult) return null;
+                // 添加报告到下载列表
+                const timestamp = Date.now();
+                const reportFile = {
+                    id: timestamp,
+                    name: resData.data.report.name,
+                    type: 'AI识别报告',
+                    size: resData.data.report.size,
+                    time: new Date().toLocaleString()
+                };
+                addDownloadFile(reportFile);
+                console.log('添加报告文件到downloadData:', reportFile);
+                // 添加热力图到下载列表
+                const heatmapFile = {
+                    id: timestamp + 1,  // 确保ID唯一
+                    name: resData.data.heatmap.name,
+                    type: 'AI识别热力图',
+                    size: resData.data.heatmap.size,
+                    time: new Date().toLocaleString()
+                };
+                addDownloadFile(heatmapFile);
+                console.log('添加热力图文件到downloadData:', heatmapFile);
+                console.log('当前downloadData长度:', downloadData.length);
+                message.success('AI识别成功');
+            } else {
+                message.error(`识别失败: ${resData.msg}`);
+                updateProjectStatus('识别失败');
+            }
+        } catch (error) {
+            setIsDetecting(false);
+            message.error(`识别失败: ${error.message}`);
+            updateProjectStatus('识别失败');
+        }
+    };
+
+    // 下载AI预测报告
+    const handleDownloadReport = () => {
+        if (!detectionResult.damageType) {
+            message.warning('请先完成AI识别');
+            return;
+        }
+        downloadFile(detectionResult.report);
+    };
+
+    // 下载热力图
+    const handleDownloadHeatmap = () => {
+        if (!detectionResult.heatmap) {
+            message.warning('请先完成AI识别');
+            return;
+        }
+        downloadFile(detectionResult.heatmap);
+    };
+
+    // 展示热力图
+    const renderHeatmap = () => {
+        if (!detectionResult.heatmap) {
+            return <div>暂无热力图数据</div>;
+        }
+
+        // 构建图片URL
+        const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${detectionResult.heatmap.name}`;
+
+        return (
+            <div style={{ width: '100%', textAlign: 'center' }}>
+                <Image
+                    src={imageUrl}
+                    alt="热力图"
+                    style={{ maxWidth: '100%', maxHeight: '300px' }}
+                />
+            </div>
+        );
+    };
 
     return (
-      <div className="card" style={{ marginTop: '24px' }}>
-        <h3>损伤热力图</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '2px', marginTop: '16px' }}>
-          {detectionResult.heatmapData.map((row, i) => (
-            row.map((value, j) => (
-              <div
-                key={`${i}-${j}`}
-                style={{
-                  height: '20px',
-                  backgroundColor: `rgba(255, 0, 0, ${value / 100})`,
-                  border: '1px solid #ddd'
-                }}
-                title={`(${i},${j}): ${value.toFixed(2)}`}
-              />
-            ))
-          ))}
+        <div className="fade-in">
+            <h1 style={{ marginBottom: '24px' }}>智能识别</h1>
+
+            <div className="card" style={{ marginTop: '24px' }}>
+                <h2 style={{ marginBottom: '16px' }}>图片上传</h2>
+                <Upload
+                    multiple
+                    action="http://localhost:5000/api/uploadFile"
+                    onChange={handleUploadChange}
+                    listType="picture-card"
+                    fileList={uploadData}
+                    onPreview={handlePreview}
+                    onRemove={handleRemoveFile}
+                >
+                    <div>
+                        <PlusOutlined />
+                        <div className="ant-upload-text">上传图片</div>
+                    </div>
+                </Upload>
+                {previewImage && (
+                    <Image
+                        wrapperStyle={{ display: 'none' }}
+                        preview={{
+                            visible: previewOpen,
+                            onVisibleChange: visible => setPreviewOpen(visible),
+                            afterOpenChange: visible => !visible && setPreviewImage(''),
+                        }}
+                        src={previewImage}
+                    />
+                )}
+            </div>
+
+            <div className="card" style={{ marginTop: '24px' }}>
+                <h2 style={{ marginBottom: '16px' }}>参数设置</h2>
+                <div className="precision-selector" style={{ display: 'flex', alignItems: 'center' }}>
+                    <span style={{ marginRight: '16px' }}>识别精度: </span>
+                    <Select
+                        defaultValue="medium"
+                        style={{ width: 120 }}
+                        onChange={setPrecision}
+                        value={precision}
+                    >
+                        <Option value="high">高精度</Option>
+                        <Option value="medium">中等精度</Option>
+                        <Option value="low">低精度</Option>
+                    </Select>
+                </div>
+            </div>
+
+            <div className="button-group" style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-start' }}>
+                <Button
+                    type="primary"
+                    icon={<PlayCircleOutlined />}
+                    onClick={handleStartDetection}
+                    loading={isDetecting}
+                    style={{ marginRight: '16px' }}
+                >
+                    开始识别
+                </Button>
+                <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={handleDownloadReport}
+                    hidden={!detectionResult.damageType}
+                >
+                    下载AI预测报告
+                </Button>
+                <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={handleDownloadHeatmap}
+                    hidden={!detectionResult.damageType}
+                >
+                    下载热力图
+                </Button>
+            </div>
+
+            {detectionResult.damageType && (
+                <div className="card" style={{ marginTop: '24px' }}>
+                    <h2 style={{ marginBottom: '16px' }}>识别结果</h2>
+                    <Row gutter={[16, 16]}>
+                        <Col span={12}>
+                            <div className="card" style={{ height: '100%', padding: '16px' }}>
+                                <h3 style={{ marginBottom: '16px' }}>损伤信息</h3>
+                                <p><strong>损伤类型：</strong>{detectionResult.damageType}</p>
+                                <p><strong>损伤严重程度：</strong>{detectionResult.damageSeverity}</p>
+                                <p><strong>损伤面积：</strong>{detectionResult.damageArea}</p>
+                                <p><strong>损伤位置：</strong>{detectionResult.damageLocation}</p>
+                                <p><strong>损伤描述：</strong>{detectionResult.damageDescription}</p>
+                                <p><strong>识别精度：</strong>{precision === 'high' ? '高精度' : precision === 'medium' ? '中等精度' : '低精度'}</p>
+                            </div>
+                        </Col>
+                        <Col span={12}>
+                            <div className="card" style={{ marginTop: '16px', padding: '16px' }}>
+                                <h3 style={{ marginBottom: '16px' }}>损伤热力图</h3>
+                                {renderHeatmap()}
+                            </div>
+                        </Col>
+                    </Row>
+                </div>
+            )}
+
+            {/* 移除自定义预览模态框，使用Ant Design的Image组件预览功能 */}
         </div>
-      </div>
     );
-  };
-
-  return (
-    <div className="fade-in">
-      <h1 style={{ marginBottom: '24px' }}>AI识别</h1>
-
-      <div className="card">
-        <h2 style={{ marginBottom: '16px' }}>损伤图片上传</h2>
-        <Upload
-          listType="picture-card"
-          fileList={uploadedFiles}
-          onChange={handleUploadChange}
-          multiple
-          accept="image/*"
-        >
-          {uploadButton}
-        </Upload>
-      </div>
-
-      <div className="button-group" style={{ justifyContent: 'flex-start' }}>
-        <Button
-          type="primary"
-          icon={<PlayCircleOutlined />}
-          onClick={handleStartDetection}
-          loading={isDetecting}
-          disabled={isDetecting}
-        >
-          开始识别
-        </Button>
-      </div>
-
-      {detectionResult && (
-        <>
-          <div className="card" style={{ marginTop: '24px' }}>
-            <h2 style={{ marginBottom: '16px' }}>识别结果</h2>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Card title="损伤信息" bordered={true}>
-                  <p><strong>损伤类型：</strong>{detectionResult.damageType}</p>
-                  <p><strong>损伤面积：</strong>{detectionResult.damageArea}</p>
-                  <p><strong>关联性：</strong>{detectionResult.correlation}</p>
-                  <p><strong>置信度：</strong>{detectionResult.confidence}</p>
-                  <p><strong>识别时间：</strong>{detectionResult.detectedAt}</p>
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card title="损伤类型分布" bordered={true} style={{ height: '100%' }}>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={damageTypes} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="name" type="category" width={80} />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="value" fill="#1890ff" name="占比(%)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </Card>
-              </Col>
-            </Row>
-          </div>
-
-          {renderHeatmap()}
-
-          <div className="button-group" style={{ justifyContent: 'flex-start', marginTop: '24px' }}>
-            <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadReport}>
-              下载AI预测报告
-            </Button>
-          </div>
-        </>
-      )}
-    </div>
-  );
 }
 
 export default AIDetection;

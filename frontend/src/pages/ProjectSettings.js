@@ -8,7 +8,7 @@ const { Option } = Select;
 
 function ProjectSettings() {
     const [form] = Form.useForm();
-    const { setSelectedLogType, filteredLogs, currentProject, createProject, downloadData, downloadFileLog } = useProjectContext();
+    const { setSelectedLogType, filteredLogs, currentProject, createProject, downloadData, downloadFile } = useProjectContext();
 
     const handleCreateProject = async (values) => {
         try {
@@ -26,7 +26,11 @@ function ProjectSettings() {
             
             // 检查响应是否成功
             if (!response.ok) {
-                throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                if (response.status === 409) {
+                    throw new Error('项目已存在');
+                } else {
+                    throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                }
             }
             const resData = await response.json();
             if (resData.code !== '0') {
@@ -43,30 +47,12 @@ function ProjectSettings() {
     };
 
     const handleDownload = async (file) => {
-        try {
-            const response = await fetch(`/api/downloadFile?fileName=${file.name}`);
-            if (!response.ok) {
-                throw new Error(`HTTP错误! 状态码: ${response.status}`);
-            }
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = file.name;
-            link.click();
-            URL.revokeObjectURL(url);
-            downloadFileLog(file);
-            message.success(`文件 ${file.name} 下载成功`);
-        } catch (error) {
-            message.error('下载文件失败：' + error.message); 
-        }
+        downloadFile(file);  
     };
 
     const handleLogTypeChange = (type) => {
         setSelectedLogType(type);
     };
-
-    // filteredLogs 已在Context中定义
 
     const logColumns = [
         { title: '时间', dataIndex: 'time', key: 'time', width: '20%' },
