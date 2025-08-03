@@ -248,7 +248,7 @@ function AIDetection() {
                     <span style={{ marginRight: '16px' }}>识别精度: </span>
                     <Select
                         defaultValue="medium"
-                        style={{ width: 120 }}
+                        style={{ flex: 1, maxWidth: '300px' }}
                         onChange={setPrecision}
                         value={precision}
                     >
@@ -305,7 +305,7 @@ function AIDetection() {
                             </div>
                         </Col>
                         <Col span={12}>
-                            <div className="card" style={{ marginTop: '16px', padding: '16px' }}>
+                            <div className="card" style={{ height: '100%', padding: '16px' }}>
                                 <h3 style={{ marginBottom: '16px' }}>损伤热力图</h3>
                                 {renderHeatmap()}
                             </div>
