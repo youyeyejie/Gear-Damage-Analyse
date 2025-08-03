@@ -101,6 +101,10 @@ const ProjectManager = {
         },
     },
     simulationResult: {
+        input: {
+            meshDensity: 'low',
+            boundaryCondition: {},
+        },
     }
 };
 
@@ -190,11 +194,14 @@ const ProjectProvider = ({ children }) => {
 
     // 更新下载文件列表
     const updateDownloadFileList = (file) => {
-        setCurrentProject(prevProject => ({
-            ...prevProject,
-            downloadFileList: [...prevProject.downloadFileList, file],
-        }));
-        sessionStorage.setItem('currentProject', JSON.stringify(currentProject));
+        const updatedDownloadFileList = [...currentProject.downloadFileList, file];
+        const updatedProject = {
+            ...currentProject,
+            downloadFileList: updatedDownloadFileList,
+        };
+        setCurrentProject(updatedProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
+        
         // 记录日志
         const newLog = {
             id: Date.now(),
@@ -244,7 +251,7 @@ const ProjectProvider = ({ children }) => {
     // 更新上传文件列表
     // type: ai, model
     // operation: add, remove
-    const updateUploadFileList = (file, type, operation) => {
+    const updateUploadFileList = (file, type, operation = 'add') => {
         var updatedUploadFileList = {};
         if (type === 'ai') {
             const deduplicated = currentProject.uploadFileList.aiDetectionImage.filter(f => f.name !== file.name);
@@ -253,12 +260,19 @@ const ProjectProvider = ({ children }) => {
                 aiDetectionImage: operation === 'add' ? [...deduplicated, file] : deduplicated,
             };
         } else if (type === 'model') {
-            updatedUploadFileList = { 
-                ...currentProject.uploadFileList,
-                geometryModel: operation === 'add' ? file : null,
-            };
+            fetch('http://localhost:5000/api/deleteFile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ fileName: currentProject.uploadFileList.geometryModel })
+            }).then (()=> {
+                updatedUploadFileList = { 
+                    ...currentProject.uploadFileList,
+                    geometryModel: file,
+                };
+            });
         }
-        console.log(updatedUploadFileList);
         const updatedProject = { ...currentProject, uploadFileList: updatedUploadFileList };
         setCurrentProject(updatedProject);
         sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
@@ -290,21 +304,24 @@ const ProjectProvider = ({ children }) => {
 
     // 更新识别结果
     const updateDetectionResult = (result) => {
-        setCurrentProject(prevProject => ({
-            ...prevProject,
+        const updatedProject = {
+            ...currentProject,
             detectionResult: result,
-        }));
-        sessionStorage.setItem('currentProject', JSON.stringify(currentProject));
-
-        // 记录日志
-        const newLog = {
-            id: Date.now(),
-            time: new Date().toLocaleString(),
-            operation: '识别结果',
-            type: '识别',
-            description: `识别结果：${result.output.damageType}，${result.output.damageSeverity}，${result.output.damageLocation}，${result.output.damageDescription}`,
         };
-        addLog(newLog);
+        setCurrentProject(updatedProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
+
+        if (result.output?.damageType) {
+            // 记录日志
+            const newLog = {
+                id: Date.now(),
+                time: new Date().toLocaleString(),
+                operation: '识别结果',
+                type: '识别',
+                description: `识别结果：${result.output.damageType}，${result.output.damageSeverity}，${result.output.damageLocation}，${result.output.damageDescription}`,
+            };
+            addLog(newLog);
+        }
     };
 
     const loadGearData = async () => {
@@ -324,11 +341,12 @@ const ProjectProvider = ({ children }) => {
 
     // 更新齿轮组编号
     const updateSelectedGearGroup = (selectedGearGroup) => {
-        setCurrentProject(prevProject => ({
-            ...prevProject,
+        const updatedProject = {
+            ...currentProject,
             selectedGearGroup: selectedGearGroup,
-        }));
-        sessionStorage.setItem('currentProject', JSON.stringify(currentProject));
+        };
+        setCurrentProject(updatedProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
 
         // 记录日志
         const newLog = {
@@ -336,28 +354,53 @@ const ProjectProvider = ({ children }) => {
             time: new Date().toLocaleString(),
             operation: '选择齿轮组',
             type: '建模',
-            description: `选择齿轮组：${selectedGearGroup.groupNumber}`,
+            description: `选择齿轮组：${selectedGearGroup.groupNumber}，主齿轮：${selectedGearGroup.mainGear.model}，从齿轮：${selectedGearGroup.subGear.model}`,
         };
         addLog(newLog);
     };
 
     // 更新建模结果
     const updateModelingResult = (modelingResult) => {
-        setCurrentProject(prevProject => ({
-            ...prevProject,
+        const updatedProject = {
+            ...currentProject,
             modelingResult: modelingResult,
-        }));
-        sessionStorage.setItem('currentProject', JSON.stringify(currentProject));
-
-        // 记录日志
-        const newLog = {
-            id: Date.now(),
-            time: new Date().toLocaleString(),
-            operation: '建模结果',
-            type: '建模',
-            description: `建模结果：${modelingResult.model.name}，${modelingResult.model.size}`,
         };
-        addLog(newLog);
+        setCurrentProject(updatedProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
+
+        if (modelingResult.model?.name) {
+            // 记录日志
+            const newLog = {
+                id: Date.now(),
+                time: new Date().toLocaleString(),
+                operation: '建模结果',
+                type: '建模',
+                description: `建模结果：${modelingResult.model.name}，${modelingResult.model.size}`,
+            };
+            addLog(newLog);
+        }
+    };
+
+    // 更新仿真结果
+    const updateSimulationResult = (simulationResult) => {
+        const updatedProject = {
+            ...currentProject,
+            simulationResult: simulationResult,
+        };
+        setCurrentProject(updatedProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
+
+        if (simulationResult.report?.name) {
+            // 记录日志
+            const newLog = {
+                id: Date.now(),
+                time: new Date().toLocaleString(),
+                operation: '仿真结果',
+                type: '仿真',
+                description: `仿真结果：${simulationResult.report.name}，${simulationResult.report.size}`,
+            };
+            addLog(newLog);
+        }
     };
 
 
@@ -383,6 +426,8 @@ const ProjectProvider = ({ children }) => {
         loadGearData, //加载齿轮数据
         updateSelectedGearGroup, //更新齿轮组
         updateModelingResult, //更新建模结果
+
+        updateSimulationResult, //更新仿真结果
     };
 
     return (

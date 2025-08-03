@@ -95,10 +95,10 @@ function ProjectSettings() {
                 <Form form={form} layout="vertical" onFinish={handleCreateProject} initialValues={{ projectPath: 'Data' }}>
                     <div style={{ display: 'flex', gap: '16px' }}>
                         <Form.Item name="projectName" label="项目名称" rules={[{ required: true, message: '请输入项目名称' }]} style={{ flex: 1 }}>
-                            <Input placeholder="请输入项目名称" />
+                            <Input placeholder={currentProject.projectInfo.name ? `当前项目名称：${currentProject.projectInfo.name}` : "请输入项目名称"} />
                         </Form.Item>
                         <Form.Item name="projectPath" label="项目路径" rules={[{ required: true, message: '请输入项目路径' }]} style={{ flex: 2 }}>
-                            <Input placeholder="请输入项目路径 (e.g. C:/Users/Desktop)" />
+                            <Input placeholder="请输入项目路径 e.g. C:\Users\Desktop" />
                         </Form.Item>
                     </div>
                     <div className="button-group" style={{ justifyContent: 'flex-start' }}>
@@ -110,11 +110,11 @@ function ProjectSettings() {
 
                 {currentProject.projectInfo.id && (
                     <div style={{ marginTop: '24px', padding: '16px', background: '#f0f2f5', borderRadius: '8px' }}>
-                        <h3>当前项目信息</h3>
+                        <h3 style={{ marginBottom: '16px' }}>当前项目信息</h3>
                         <p>项目名称：{currentProject.projectInfo.name}</p>
                         <p>项目路径：{currentProject.projectInfo.path}</p>
                         <p>创建时间：{currentProject.projectInfo.createTime}</p>
-                        <p>项目状态：<span className={`status-tag ${currentProject.projectInfo.status === '待建模' || currentProject.projectInfo.status === '待仿真' ? 'pending' : currentProject.projectInfo.status.includes('中') ? 'processing' : 'completed'}`}>{currentProject.projectInfo.status}</span></p>
+                        <p>项目状态：<span className={`status-tag ${currentProject.projectInfo.status.includes('待') ? 'pending' : currentProject.projectInfo.status.includes('中') ? 'processing' : currentProject.projectInfo.status.includes('已') ? 'completed' : 'failed'}`}>{currentProject.projectInfo.status}</span></p>
                     </div>
                 )}
             </div>

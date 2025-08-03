@@ -120,9 +120,11 @@ function AIDetection() {
             setIsDetecting(false);
 
             if (resData.code === '200') {
-                updateProjectStatus('识别完成，待仿真');
-                // 识别成功，更新结果
                 updateDetectionResult(resData.data);
+                // 识别成功，更新结果
+                setTimeout(() => {
+                    updateProjectStatus('识别完成，待仿真');
+                }, 100);
 
                 // 添加报告到下载列表
                 const reportFile = {
@@ -132,7 +134,9 @@ function AIDetection() {
                     size: resData.data.report.size,
                     time: new Date().toLocaleString()
                 };
-                updateDownloadFileList(reportFile);
+                setTimeout(() => {
+                    updateDownloadFileList(reportFile);
+                }, 100);
 
                 const heatmapFile = {
                     id: Date.now(),
@@ -141,7 +145,9 @@ function AIDetection() {
                     size: resData.data.heatmap.size,
                     time: new Date().toLocaleString()
                 };
-                updateDownloadFileList(heatmapFile);
+                setTimeout(() => {
+                    updateDownloadFileList(heatmapFile);
+                }, 100);
                 message.success('AI识别成功');
             } else {
                 message.error(`识别失败: ${resData.msg}`);
@@ -206,6 +212,7 @@ function AIDetection() {
                     fileList={currentProject.uploadFileList.aiDetectionImage}
                     onPreview={handlePreview}
                     onRemove={handleRemoveFile}
+                    accept='image/*'
                 >
                     <div>
                         <PlusOutlined />
@@ -228,9 +235,9 @@ function AIDetection() {
             <div className="card" style={{ marginTop: '24px' }}>
                 <h2 style={{ marginBottom: '16px' }}>参数设置</h2>
                 <div className="precision-selector" style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ marginRight: '16px' }}>识别精度: </span>
+                    <label style={{ width: '120px', marginRight: '16px' }}>识别精度设置:</label>
                     <Select
-                        defaultValue="medium"
+                        defaultValue="low"
                         style={{ width: 120 }}
                         onChange={value => updateDetectionResult({ input: { precision: value } })}
                         value={currentProject.detectionResult.input.precision}
@@ -256,7 +263,7 @@ function AIDetection() {
                     type="primary"
                     icon={<DownloadOutlined />}
                     onClick={handleDownloadReport}
-                    hidden={!currentProject.detectionResult.report.name}
+                    hidden={!currentProject.detectionResult.report?.name}
                     style={{ marginRight: '16px' }}
                 >
                     下载AI预测报告
@@ -265,14 +272,14 @@ function AIDetection() {
                     type="primary"
                     icon={<DownloadOutlined />}
                     onClick={handleDownloadHeatmap}
-                    hidden={!currentProject.detectionResult.heatmap.name}
+                    hidden={!currentProject.detectionResult.heatmap?.name}
                     style={{ marginRight: '16px' }}
                 >
                     下载热力图
                 </Button>
             </div>
 
-            {currentProject.detectionResult.output.damageType && (
+            {currentProject.detectionResult.output?.damageType && (
                 <div className="card" style={{ marginTop: '24px' }}>
                     <h2 style={{ marginBottom: '16px' }}>识别结果</h2>
                     <Row gutter={[16, 16]}>
