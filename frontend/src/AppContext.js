@@ -83,7 +83,7 @@ const ProjectProvider = ({ children }) => {
 
         // 记录日志
         const newLog = {
-            id: logs.length + 1,
+            id: Date.now(),
             time: new Date().toLocaleString(),
             operation: '创建项目',
             type: '建模',
@@ -102,7 +102,7 @@ const ProjectProvider = ({ children }) => {
 
         // 记录日志
         const newLog = {
-            id: logs.length + 1,
+            id: Date.now(),
             time: new Date().toLocaleString(),
             operation: '更新状态',
             type: status === '待建模' || status === '建模中' || status === '建模完成' ? '建模' :
@@ -141,7 +141,7 @@ const ProjectProvider = ({ children }) => {
             URL.revokeObjectURL(url);
              // 记录日志
             const newLog = {
-                id: logs.length + 1,
+                id: Date.now(),
                 time: new Date().toLocaleString(),
                 operation: '下载文件',
                 type: file.type === '几何模型' ? '建模' : file.type === '仿真报告' ? '仿真' : '识别',
@@ -159,7 +159,7 @@ const ProjectProvider = ({ children }) => {
     const uploadFileLog = (file) => {
         // 记录日志
         const newLog = {
-            id: logs.length + 1,
+            id: Date.now(),
             time: new Date().toLocaleString(),
             operation: '上传文件',
             type: file.type === '几何模型' ? '建模' : file.type === '仿真报告' ? '仿真' : '识别',
@@ -175,7 +175,7 @@ const ProjectProvider = ({ children }) => {
         sessionStorage.setItem('detectionResult', JSON.stringify(result));
         // 记录日志
         const newLog = {
-            id: logs.length + 1,
+            id: Date.now(),
             time: new Date().toLocaleString(),
             operation: '识别结果',
             type: '识别',
