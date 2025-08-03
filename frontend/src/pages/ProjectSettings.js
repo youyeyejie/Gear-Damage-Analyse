@@ -8,8 +8,20 @@ const { Option } = Select;
 
 function ProjectSettings() {
     const [form] = Form.useForm();
-    const { setSelectedLogType, filteredLogs, currentProject,
-        createProject, downloadData, downloadFile } = useProjectContext();
+    // const { setSelectedLogType, filteredLogs, currentProject,
+    //     createProject, downloadDataList, downloadFile } = useProjectContext();
+    const {
+        filteredLogs, //筛选出来日志列表
+        setSelectedLogType, //筛选日志的函数
+
+        currentProject, //当前项目相关信息
+        // setCurrentProject, //更新当前项目
+        createProject, //创建项目
+        // updateProjectStatus, //更新项目状态
+
+        // updateDownloadFileList, //更新下载文件列表
+        downloadFile, //下载文件
+    } = useProjectContext();
 
     const handleCreateProject = async (values) => {
         try {
@@ -98,13 +110,13 @@ function ProjectSettings() {
                     </div>
                 </Form>
 
-                {currentProject && (
+                {currentProject.projectInfo.id && (
                     <div style={{ marginTop: '24px', padding: '16px', background: '#f0f2f5', borderRadius: '8px' }}>
                         <h3>当前项目信息</h3>
-                        <p>项目名称：{currentProject.name}</p>
-                        <p>项目路径：{currentProject.path}</p>
-                        <p>创建时间：{currentProject.createTime}</p>
-                        <p>项目状态：<span className={`status-tag ${currentProject.status === '待建模' || currentProject.status === '待仿真' ? 'pending' : currentProject.status.includes('中') ? 'processing' : 'completed'}`}>{currentProject.status}</span></p>
+                        <p>项目名称：{currentProject.projectInfo.name}</p>
+                        <p>项目路径：{currentProject.projectInfo.path}</p>
+                        <p>创建时间：{currentProject.projectInfo.createTime}</p>
+                        <p>项目状态：<span className={`status-tag ${currentProject.projectInfo.status === '待建模' || currentProject.projectInfo.status === '待仿真' ? 'pending' : currentProject.projectInfo.status.includes('中') ? 'processing' : 'completed'}`}>{currentProject.projectInfo.status}</span></p>
                     </div>
                 )}
             </div>
@@ -129,14 +141,14 @@ function ProjectSettings() {
                                             </Select>
                                         </div>
                                     </div>
-                                    <Table columns={logColumns} dataSource={filteredLogs} rowKey="id" pagination={{ pageSize: 5 }} />
+                                    <Table columns={logColumns} dataSource={filteredLogs} rowKey="id" pagination={{ pageSize: 15 }} />
                                 </div>
                             ),
                         },
                         {
                             key: 'downloads',
                             label: '下载中心',
-                            children: <Table columns={downloadColumns} dataSource={downloadData} rowKey="id" pagination={{ pageSize: 5 }} />,
+                            children: <Table columns={downloadColumns} dataSource={currentProject.downloadFileList} rowKey="id" pagination={{ pageSize: 5 }} />,
                         },
                     ]}
                 />

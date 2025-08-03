@@ -7,9 +7,26 @@ import '../App.css';
 const { Option } = Select;
 
 function AIDetection() {
-    const { currentProject, updateProjectStatus, uploadData, 
-        setUploadData, uploadFileLog, detectionResult, updateDetectionResult, 
-        addDownloadFile, downloadFile } = useProjectContext();
+    // const { currentProject, updateProjectStatus, uploadDataList, 
+    //     setUploadDataList, uploadFileLog, detectionResult, updateDetectionResult, 
+    //     addDownloadFile, downloadFile } = useProjectContext();
+    const {
+        // filteredLogs, //筛选出来日志列表
+        // setSelectedLogType, //筛选日志的函数
+
+        currentProject, //当前项目相关信息
+        // setCurrentProject, //更新当前项目
+        // createProject, //创建项目
+        updateProjectStatus, //更新项目状态
+
+        updateDownloadFileList, //更新下载文件列表
+        downloadFile, //下载文件
+
+        updateUploadFileList, //更新上传文件列表
+        clearUploadFileList, //清空上传文件列表
+
+        updateDetectionResult, //更新识别结果
+    } = useProjectContext();
     const [isDetecting, setIsDetecting] = useState(false);
     const [precision, setPrecision] = useState('medium');
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -25,29 +42,23 @@ function AIDetection() {
         });
 
     // 处理上传变化
-    const handleUploadChange = ({ fileList: newFileList, file: currentFile }) => {
-        setUploadData(newFileList); 
-        // 存储到sessionStorage
-        sessionStorage.setItem('uploadData', JSON.stringify(uploadData));
-    
+    const handleUploadChange = ({ file: currentFile }) => {
+        updateUploadFileList(currentFile, 'ai', 'add');
+            
         // 文件开始上传前检查是否已建立项目
         // 只在当前文件上传完成或失败时显示消息
-        if (currentFile) {
-            if (!currentProject) {
-                message.warning('请先创建项目');
-                setUploadData([]);
-                sessionStorage.setItem('uploadData', JSON.stringify(uploadData));
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 500);
-                return;
-            }
-            if (currentFile.status === "error") {
-                message.error(currentFile.response?.msg || '上传失败');
-            } else if (currentFile.status === "done") {
-                message.success(currentFile.response?.msg || '上传成功');
-                uploadFileLog(currentFile);
-            }
+        if (!currentProject.projectInfo.id) {
+            message.warning('请先创建项目');
+            clearUploadFileList();
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 500);
+            return;
+        }
+        if (currentFile.status === "error") {
+            message.error(currentFile.response?.msg || '上传失败');
+        } else if (currentFile.status === "done") {
+            message.success(currentFile.response?.msg || '上传成功');
         }
     };
 
@@ -65,8 +76,7 @@ function AIDetection() {
                 .then(resData => {
                     if (resData.code === '0') {
                         // 删除成功，更新前端状态
-                        setUploadData(prev => prev.filter(f => f.uid !== file.uid));
-                        sessionStorage.setItem('uploadData', JSON.stringify(uploadData));
+                        updateUploadFileList(file, 'ai', 'remove');
                         message.success(`已删除文件: ${file.name}`);
                     } else {
                         message.error(`删除失败: ${resData.msg}`);
@@ -88,7 +98,7 @@ function AIDetection() {
 
     // 开始AI识别
     const handleStartDetection = async () => {
-        if (uploadData.length === 0) {
+        if (currentProject.uploadFileList.aiDetectionImage.length === 0) {
             message.warning('请先上传至少一张图片');
             return;
         }
@@ -96,7 +106,7 @@ function AIDetection() {
         setIsDetecting(true);
         updateProjectStatus('识别中');
         const images = [];
-        uploadData.map(file => images.push(file.response.data.fileName));
+        currentProject.uploadFileList.aiDetectionImage.map(file => images.push(file.response.data.fileName));
 
         try {
             const response = await fetch('http://localhost:5000/api/aiDetection', {
@@ -114,8 +124,9 @@ function AIDetection() {
             setIsDetecting(false);
 
             if (resData.code === '200') {
+                updateProjectStatus('识别完成，待仿真');
                 // 识别成功，更新结果
-                updateDetectionResult({
+                const result = {
                     damageType: resData.data.damageType,
                     damageSeverity: resData.data.damageSeverity,
                     damageLocation: resData.data.damageLocation,
@@ -130,13 +141,9 @@ function AIDetection() {
                         size: resData.data.heatmap.size,
                     },
                     precision: resData.data.precision,
-                });
+                };
+                updateDetectionResult(result);
 
-                // 更新项目状态
-                updateProjectStatus('识别完成');
-
-                // 添加报告到下载列表
-                
                 // 添加报告到下载列表
                 const reportFile = {
                     id: Date.now(),
@@ -145,8 +152,8 @@ function AIDetection() {
                     size: resData.data.report.size,
                     time: new Date().toLocaleString()
                 };
-                addDownloadFile(reportFile);
-                
+                updateDownloadFileList(reportFile);
+
                 const heatmapFile = {
                     id: Date.now(),
                     name: resData.data.heatmap.name,
@@ -154,7 +161,7 @@ function AIDetection() {
                     size: resData.data.heatmap.size,
                     time: new Date().toLocaleString()
                 };
-                addDownloadFile(heatmapFile);
+                updateDownloadFileList(heatmapFile);
                 message.success('AI识别成功');
             } else {
                 message.error(`识别失败: ${resData.msg}`);
@@ -169,30 +176,30 @@ function AIDetection() {
 
     // 下载AI预测报告
     const handleDownloadReport = () => {
-        if (!detectionResult.damageType) {
+        if (!currentProject.detectionResult.report) {
             message.warning('请先完成AI识别');
             return;
         }
-        downloadFile(detectionResult.report);
+        downloadFile(currentProject.detectionResult.report);
     };
 
     // 下载热力图
     const handleDownloadHeatmap = () => {
-        if (!detectionResult.heatmap) {
+        if (!currentProject.detectionResult.heatmap) {
             message.warning('请先完成AI识别');
             return;
         }
-        downloadFile(detectionResult.heatmap);
+        downloadFile(currentProject.detectionResult.heatmap);
     };
 
     // 展示热力图
     const renderHeatmap = () => {
-        if (!detectionResult.heatmap) {
+        if (!currentProject.detectionResult.heatmap) {
             return <div>暂无热力图数据</div>;
         }
 
         // 构建图片URL
-        const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${detectionResult.heatmap.name}`;
+        const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${currentProject.detectionResult.heatmap.name}`;
 
         return (
             <div style={{ width: '100%', textAlign: 'center' }}>
@@ -216,7 +223,7 @@ function AIDetection() {
                     action="http://localhost:5000/api/uploadFile"
                     onChange={handleUploadChange}
                     listType="picture-card"
-                    fileList={uploadData}
+                    fileList={currentProject.uploadFileList.aiDetectionImage}
                     onPreview={handlePreview}
                     onRemove={handleRemoveFile}
                 >
@@ -269,7 +276,7 @@ function AIDetection() {
                     type="primary"
                     icon={<DownloadOutlined />}
                     onClick={handleDownloadReport}
-                    hidden={!detectionResult.damageType}
+                    hidden={!currentProject.detectionResult.report}
                 >
                     下载AI预测报告
                 </Button>
@@ -277,24 +284,24 @@ function AIDetection() {
                     type="primary"
                     icon={<DownloadOutlined />}
                     onClick={handleDownloadHeatmap}
-                    hidden={!detectionResult.damageType}
+                    hidden={!currentProject.detectionResult.heatmap}
                 >
                     下载热力图
                 </Button>
             </div>
 
-            {detectionResult.damageType && (
+            {currentProject.detectionResult.damageType && (
                 <div className="card" style={{ marginTop: '24px' }}>
                     <h2 style={{ marginBottom: '16px' }}>识别结果</h2>
                     <Row gutter={[16, 16]}>
                         <Col span={12}>
                             <div className="card" style={{ height: '100%', padding: '16px' }}>
                                 <h3 style={{ marginBottom: '16px' }}>损伤信息</h3>
-                                <p><strong>损伤类型：</strong>{detectionResult.damageType}</p>
-                                <p><strong>损伤严重程度：</strong>{detectionResult.damageSeverity}</p>
-                                <p><strong>损伤面积：</strong>{detectionResult.damageArea}</p>
-                                <p><strong>损伤位置：</strong>{detectionResult.damageLocation}</p>
-                                <p><strong>损伤描述：</strong>{detectionResult.damageDescription}</p>
+                                <p><strong>损伤类型：</strong>{currentProject.detectionResult.damageType}</p>
+                                <p><strong>损伤严重程度：</strong>{currentProject.detectionResult.damageSeverity}</p>
+                                <p><strong>损伤面积：</strong>{currentProject.detectionResult.damageArea}</p>
+                                <p><strong>损伤位置：</strong>{currentProject.detectionResult.damageLocation}</p>
+                                <p><strong>损伤描述：</strong>{currentProject.detectionResult.damageDescription}</p>
                                 <p><strong>识别精度：</strong>{precision === 'high' ? '高精度' : precision === 'medium' ? '中等精度' : '低精度'}</p>
                             </div>
                         </Col>
@@ -307,8 +314,6 @@ function AIDetection() {
                     </Row>
                 </div>
             )}
-
-            {/* 移除自定义预览模态框，使用Ant Design的Image组件预览功能 */}
         </div>
     );
 }

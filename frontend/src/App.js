@@ -66,7 +66,7 @@ function AppContent() {
                 <Layout className="site-layout">
                     <Header className="site-layout-background" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 24px' }}>
                         <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-                            当前项目状态: <span style={{ color: '#1890ff' }}>{currentProject?.status || '未创建项目'}</span>
+                            当前项目状态: <span style={{ color: '#1890ff' }}>{currentProject?.projectInfo?.status || '未创建项目'}</span>
                         </div>
                     </Header>
                     <Content style={{ margin: '0 16px' }}>

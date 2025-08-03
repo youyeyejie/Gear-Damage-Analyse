@@ -3,46 +3,51 @@ import { message } from 'antd';
 
 // 创建Context
 const ProjectContext = createContext();
-const DetectionResult = {
-    damageType: '',
-    damageSeverity: '',
-    damageLocation: '',
-    damageArea: '',
-    damageDescription: '',
-    report: {
-        name: '',
-        size: '',
+
+const ProjectManager = {
+    projectInfo: {
+        id: null,
+        name: null,
+        path: null,
+        status: null,
+        createTime: null,
     },
-    heatmap: {
-        name: '',
-        size: '',
+    downloadFileList: [],
+    uploadFileList: {
+        aiDetectionImage: [],
+        geometryModel: null,
     },
-    precision: '',
+    detectionResult: {
+        damageType: null,
+        damageSeverity: null,
+        damageLocation: null,
+        damageArea: null,
+        damageDescription: null,
+        report: {
+            name: null,
+            size: null,
+        },
+        heatmap: {
+            name: null,
+            size: null,
+        },
+        precision: null,
+    },
 };
+
+const Logs = [];
 
 // Context Provider组件
 const ProjectProvider = ({ children }) => {
     const [currentProject, setCurrentProject] = useState(() => {
         const savedProject = sessionStorage.getItem('currentProject');
-        return savedProject ? JSON.parse(savedProject) : null;
+        return savedProject ? JSON.parse(savedProject) : ProjectManager;
     });
     const [logs, setLogs] = useState(() => {
         const savedLogs = sessionStorage.getItem('logs');
-        return savedLogs ? JSON.parse(savedLogs) : [];
+        return savedLogs ? JSON.parse(savedLogs) : Logs;
     });
     const [selectedLogType, setSelectedLogType] = useState('all');
-    const [downloadData, setDownloadData] = useState(() => {
-            const savedDownloadData = sessionStorage.getItem('downloadData');
-            return savedDownloadData ? JSON.parse(savedDownloadData) : [];
-    });
-    const [uploadData, setUploadData] = useState(() => {
-            const savedUploadData = sessionStorage.getItem('uploadData');
-            return savedUploadData ? JSON.parse(savedUploadData) : [];
-    });
-    const [detectionResult, setDetectionResult] = useState(() => {
-        const savedDetectionResult = sessionStorage.getItem('detectionResult');
-        return savedDetectionResult ? JSON.parse(savedDetectionResult) : DetectionResult;
-    });
 
     // 添加新日志
     const addLog = (newLog) => {
@@ -62,63 +67,89 @@ const ProjectProvider = ({ children }) => {
     // 创建新项目
     const createProject = (projectName, projectPath) => {
         const newProject = {
-            id: Date.now(),
-            name: projectName,
-            path: projectPath,
-            status: '待识别',
-            createTime: new Date().toLocaleString(),
+            projectInfo: {
+                id: Date.now(),
+                name: projectName,
+                path: projectPath,
+                status: '待识别',
+                createTime: new Date().toLocaleString(),
+            },
+            downloadFileList: [],
+            uploadFileList: {
+                aiDetectionImage: [],
+                geometryModel: null,
+            },
+            detectionResult: {
+                damageType: null,
+                damageSeverity: null,
+                damageLocation: null,
+                damageArea: null,
+                damageDescription: null,
+                report: {
+                    name: null,
+                    size: null,
+                },
+                heatmap: {
+                    name: null,
+                    size: null,
+                },
+                precision: null,
+            },
         };
+        console.log(newProject);
 
         setCurrentProject(newProject);
         sessionStorage.setItem('currentProject', JSON.stringify(newProject));
-        // 清空上传数据
-        setUploadData([]);
-        sessionStorage.setItem('uploadData', JSON.stringify([]));
-        // 清空识别结果
-        setDetectionResult(DetectionResult);
-        sessionStorage.setItem('detectionResult', JSON.stringify(DetectionResult));
-        // 清空下载数据
-        setDownloadData([]);
-        sessionStorage.setItem('downloadData', JSON.stringify([]));
 
         // 记录日志
         const newLog = {
             id: Date.now(),
             time: new Date().toLocaleString(),
             operation: '创建项目',
-            type: '建模',
-            description: `创建新项目：${projectName}`,
+            type: '其他',
+            description: `创建新项目：${projectName}，路径：${projectPath}`,
         };
         addLog(newLog);
     };
 
     // 更新项目状态
     const updateProjectStatus = (status) => {
-        const updatedProject = { ...currentProject, status };
+        const updatedProject = { ...currentProject, projectInfo: { ...currentProject.projectInfo, status } };
         setCurrentProject(updatedProject);
-        // 更新sessionStorage中的项目状态
         sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
+        
         message.success(`项目状态更新为: ${status}`);
-
         // 记录日志
         const newLog = {
             id: Date.now(),
             time: new Date().toLocaleString(),
             operation: '更新状态',
-            type: status === '待建模' || status === '建模中' || status === '建模完成' ? '建模' :
-                    status === '待仿真' || status === '仿真中' || status === '仿真完成' ? '仿真' : '识别',
+            type: status.includes('建模') ? '建模' :
+                    status.includes('仿真') ? '仿真' :
+                    status.includes('识别') ? '识别' : '其他',
             description: `项目状态更新为: ${status}`,
         };
         addLog(newLog);
     };
 
-    // 添加下载文件
-    const addDownloadFile = (file) => {
-        setDownloadData(prevDownloadData => {
-            const updatedDownloadData = [...prevDownloadData, file];
-            return updatedDownloadData;
-        });
-        sessionStorage.setItem('downloadData', JSON.stringify(downloadData));
+    // 更新下载文件列表
+    const updateDownloadFileList = (file) => {
+        setCurrentProject(prevProject => ({
+            ...prevProject,
+            downloadFileList: [...prevProject.downloadFileList, file],
+        }));
+        sessionStorage.setItem('currentProject', JSON.stringify(currentProject));
+        // 记录日志
+        const newLog = {
+            id: Date.now(),
+            time: new Date().toLocaleString(),
+            operation: '新增可下载文件',
+            type: file.type.includes('模型') ? '建模' :
+                    file.type.includes('仿真') ? '仿真' :
+                    file.type.includes('报告') ? '识别' : '其他',
+            description: `新增可下载文件：${file.name}`,
+        };
+        addLog(newLog);
     };
 
     // 下载文件
@@ -153,26 +184,62 @@ const ProjectProvider = ({ children }) => {
             message.error('下载文件失败：' + error.message); 
         }
     };
+    
+    // 更新上传文件列表
+    // type: ai, model
+    // operation: add, remove
+    const updateUploadFileList = (file, type, operation) => {
+        var updatedUploadFileList = {};
+        if (type === 'ai') {
+            const deduplicated = currentProject.uploadFileList.aiDetectionImage.filter(f => f.name !== file.name);
+            updatedUploadFileList = { 
+                ...currentProject.uploadFileList,
+                aiDetectionImage: operation === 'add' ? [...deduplicated, file] : deduplicated,
+            };
+        } else if (type === 'model') {
+            updatedUploadFileList = { 
+                ...currentProject.uploadFileList,
+                geometryModel: operation === 'add' ? file : null,
+            };
+        }
+        console.log(updatedUploadFileList);
+        const updatedProject = { ...currentProject, uploadFileList: updatedUploadFileList };
+        setCurrentProject(updatedProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
 
-
-    // 上传文件日志
-    const uploadFileLog = (file) => {
         // 记录日志
-        const newLog = {
-            id: Date.now(),
-            time: new Date().toLocaleString(),
-            operation: '上传文件',
-            type: file.type === '几何模型' ? '建模' : file.type === '仿真报告' ? '仿真' : '识别',
-            description: `上传文件：${file.name}`,
-        };
-        addLog(newLog);
+        if (operation === 'add' && file.status === 'done') {
+            const newLog = {
+                id: Date.now(),
+                time: new Date().toLocaleString(),
+                operation: '上传文件',
+                type: file.type.includes('模型') ? '建模' : 
+                        file.type.includes('仿真') ? '仿真' : 
+                        file.type.includes('报告') ? '识别' : '其他',
+                description: `上传文件：${file.name}`,
+            };
+            addLog(newLog);
+        }
+    };
+
+    // 清空上传文件列表
+    const clearUploadFileList = () => {
+        const updatedProject = { ...currentProject, uploadFileList: {
+            aiDetectionImage: [],
+            geometryModel: null,
+        } };
+        setCurrentProject(updatedProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedProject));
     };
 
     // 更新识别结果
     const updateDetectionResult = (result) => {
-        setDetectionResult(result);
-        // 存储到sessionStorage
-        sessionStorage.setItem('detectionResult', JSON.stringify(result));
+        setCurrentProject(prevProject => ({
+            ...prevProject,
+            detectionResult: result,
+        }));
+        sessionStorage.setItem('currentProject', JSON.stringify(currentProject));
+
         // 记录日志
         const newLog = {
             id: Date.now(),
@@ -191,18 +258,16 @@ const ProjectProvider = ({ children }) => {
         setSelectedLogType, //筛选日志的函数
 
         currentProject, //当前项目相关信息
+        setCurrentProject, //更新当前项目
         createProject, //创建项目
         updateProjectStatus, //更新项目状态
 
-        downloadData, //下载文件列表
-        addDownloadFile, //更新下载文件列表
+        updateDownloadFileList, //更新下载文件列表
         downloadFile, //下载文件
 
-        uploadData, //上传文件列表
-        setUploadData, //更新上传文件列表
-        uploadFileLog, //更新上传文件日志
+        updateUploadFileList, //更新上传文件列表
+        clearUploadFileList, //清空上传文件列表
 
-        detectionResult, //识别结果
         updateDetectionResult, //更新识别结果
     };
 
