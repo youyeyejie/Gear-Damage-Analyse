@@ -30,11 +30,7 @@ function GeometryModeling() {
         updateModelingResult, //更新建模结果
     } = useProjectContext();
     const [form] = Form.useForm();
-    // const [gearGroups, setGearGroups] = useState([]);
-    // const [selectedGearGroup, setSelectedGearGroup] = useState(null);
-    // const [modelingResult, setModelingResult] = useState(null);
     const [isModeling, setIsModeling] = useState(false);
-    // const [damageType, setDamageType] = useState('');
 
     // 从JSON文件加载齿轮组数据
     useEffect(() => { 
@@ -55,7 +51,7 @@ function GeometryModeling() {
             message.error('请先选择齿轮配置组');
             return;
         }
-        if (!currentProject.detectionResult.damageType) {
+        if (!currentProject.detectionResult.output.damageType) {
             message.error('请先进行损伤识别');
             return;
         }
@@ -82,15 +78,7 @@ function GeometryModeling() {
             if (resData.code === '200') {
                 updateProjectStatus('建模完成，待仿真');
                 // 识别成功，更新结果
-                const result = {
-                    model: {
-                        name: resData.data.model.name,
-                        size: resData.data.model.size,
-                    },
-                };
-                updateModelingResult(result);
-                console.log(1, result);
-                console.log(2, currentProject);
+                updateModelingResult(resData.data);
 
                 // 添加模型到下载列表
                 const modelFile = {
@@ -101,7 +89,6 @@ function GeometryModeling() {
                     time: new Date().toLocaleString()
                 };
                 updateDownloadFileList(modelFile);
-                console.log(3, currentProject);
 
                 message.success('几何建模完成');
             } else {
@@ -163,7 +150,7 @@ function GeometryModeling() {
                     </Form.Item>
 
                     <Form.Item label="损伤类型">
-                        <Input value={currentProject.detectionResult.damageType} placeholder="请先进行识别" readOnly />
+                        <Input value={currentProject.detectionResult.output.damageType} placeholder="请先进行识别" readOnly />
                     </Form.Item>
                 </Form>
             </div>
@@ -197,7 +184,7 @@ function GeometryModeling() {
                             <p><strong>配置组：</strong>第{currentProject.selectedGearGroup.groupNumber}组</p>
                             <p><strong>主齿轮模型：</strong>{currentProject.selectedGearGroup.masterGear.model}</p>
                             <p><strong>从齿轮模型：</strong>{currentProject.selectedGearGroup.slaveGear.model}</p>
-                            <p><strong>损伤类型：</strong>{currentProject.detectionResult.damageType}</p>
+                            <p><strong>损伤类型：</strong>{currentProject.detectionResult.output.damageType}</p>
                         </div>
                         <div style={{ flex: 1, padding: '16px', background: '#f0f2f5', borderRadius: '8px', textAlign: 'center' }}>
                             <h3>模型预览</h3>

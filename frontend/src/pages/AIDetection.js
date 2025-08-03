@@ -25,7 +25,6 @@ function AIDetection() {
         updateDetectionResult, //更新识别结果
     } = useProjectContext();
     const [isDetecting, setIsDetecting] = useState(false);
-    const [precision, setPrecision] = useState('medium');
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState('');
 
@@ -112,7 +111,7 @@ function AIDetection() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    precision: precision,
+                    input: currentProject.detectionResult.input,
                     images: images,
                 })
             });
@@ -123,23 +122,7 @@ function AIDetection() {
             if (resData.code === '200') {
                 updateProjectStatus('识别完成，待仿真');
                 // 识别成功，更新结果
-                const result = {
-                    damageType: resData.data.damageType,
-                    damageSeverity: resData.data.damageSeverity,
-                    damageLocation: resData.data.damageLocation,
-                    damageArea: resData.data.damageArea,
-                    damageDescription: resData.data.damageDescription,
-                    report: {
-                        name: resData.data.report.name,
-                        size: resData.data.report.size,
-                    },
-                    heatmap: {
-                        name: resData.data.heatmap.name,
-                        size: resData.data.heatmap.size,
-                    },
-                    precision: resData.data.precision,
-                };
-                updateDetectionResult(result);
+                updateDetectionResult(resData.data);
 
                 // 添加报告到下载列表
                 const reportFile = {
@@ -249,8 +232,8 @@ function AIDetection() {
                     <Select
                         defaultValue="medium"
                         style={{ width: 120 }}
-                        onChange={setPrecision}
-                        value={precision}
+                        onChange={value => updateDetectionResult({ input: { precision: value } })}
+                        value={currentProject.detectionResult.input.precision}
                     >
                         <Option value="high">高精度</Option>
                         <Option value="medium">中等精度</Option>
@@ -289,19 +272,19 @@ function AIDetection() {
                 </Button>
             </div>
 
-            {currentProject.detectionResult.damageType && (
+            {currentProject.detectionResult.output.damageType && (
                 <div className="card" style={{ marginTop: '24px' }}>
                     <h2 style={{ marginBottom: '16px' }}>识别结果</h2>
                     <Row gutter={[16, 16]}>
                         <Col span={12}>
                             <div className="card" style={{ height: '100%', padding: '16px' }}>
                                 <h3 style={{ marginBottom: '16px' }}>损伤信息</h3>
-                                <p><strong>损伤类型：</strong>{currentProject.detectionResult.damageType}</p>
-                                <p><strong>损伤严重程度：</strong>{currentProject.detectionResult.damageSeverity}</p>
-                                <p><strong>损伤面积：</strong>{currentProject.detectionResult.damageArea}</p>
-                                <p><strong>损伤位置：</strong>{currentProject.detectionResult.damageLocation}</p>
-                                <p><strong>损伤描述：</strong>{currentProject.detectionResult.damageDescription}</p>
-                                <p><strong>识别精度：</strong>{precision === 'high' ? '高精度' : precision === 'medium' ? '中等精度' : '低精度'}</p>
+                                <p><strong>损伤类型：</strong>{currentProject.detectionResult.output.damageType}</p>
+                                <p><strong>损伤严重程度：</strong>{currentProject.detectionResult.output.damageSeverity}</p>
+                                <p><strong>损伤面积：</strong>{currentProject.detectionResult.output.damageArea}</p>
+                                <p><strong>损伤位置：</strong>{currentProject.detectionResult.output.damageLocation}</p>
+                                <p><strong>损伤描述：</strong>{currentProject.detectionResult.output.damageDescription}</p>
+                                <p><strong>识别精度：</strong>{currentProject.detectionResult.input.precision === 'high' ? '高精度' : currentProject.detectionResult.input.precision === 'medium' ? '中等精度' : '低精度'}</p>
                             </div>
                         </Col>
                         <Col span={12}>

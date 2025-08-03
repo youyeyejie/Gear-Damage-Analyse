@@ -133,7 +133,7 @@ def ai_detection():
             return jsonify({"code": "400", "msg": "未提供有效图片文件名列表", "data": {}}), 400
 
         # 获取识别精度参数
-        precision = data.get('precision', 'medium')  # 默认中等精度
+        precision = data['input']['precision']
         if precision not in ['high', 'medium', 'low']:
             precision = 'medium'
 
@@ -157,14 +157,17 @@ def ai_detection():
 
         # 生成模拟结果
         damage_types = ['齿面磨损', '齿根裂纹', '齿面胶合', '齿测点蚀']
-        result = {
+        result = {}
+        result['input'] = data['input']
+
+        output = {
             "damageType": random.choice(damage_types),
             "damageSeverity": f"{random.randint(10, 90)}%",
             "damageArea": f"{random.randint(10, 90)}%",
             "damageLocation": f"{random.randint(10, 90)}%",
             "damageDescription": "这是一个模拟的损伤识别结果",
-            "precision": precision,
         }
+        result['output'] = output
 
         # 模拟热力图：提取第一张图片的文件名作为热力图
         heatmap_filename = os.path.basename(file_paths[0])
@@ -178,11 +181,11 @@ def ai_detection():
         report_path = os.path.join(full_path, report_name)
         with open(report_path, 'w') as f:
             f.write("这是一个模拟的AI预测报告\n")
-            f.write("损伤类型："+result['damageType']+"\n")
-            f.write("损伤严重程度："+result['damageSeverity']+"\n")
-            f.write("损伤面积："+result['damageArea']+"\n")
-            f.write("损伤位置："+result['damageLocation']+"\n")
-            f.write("损伤描述："+result['damageDescription']+"\n")
+            f.write("损伤类型："+output['damageType']+"\n")
+            f.write("损伤严重程度："+output['damageSeverity']+"\n")
+            f.write("损伤面积："+output['damageArea']+"\n")
+            f.write("损伤位置："+output['damageLocation']+"\n")
+            f.write("损伤描述："+output['damageDescription']+"\n")
         
         result['report'] = {
             'name': report_name,
