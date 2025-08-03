@@ -17,11 +17,7 @@ function GeometryModeling() {
         loadGearData, //加载齿轮配置
     } = useProjectContext();
     const [form] = Form.useForm();
-    // const [gearGroups, setGearGroups] = useState([]);
-    // const [selectedGearGroup, setSelectedGearGroup] = useState(null);
-    // const [modelingResult, setModelingResult] = useState(null);
     const [isModeling, setIsModeling] = useState(false);
-    // const [damageType, setDamageType] = useState('');
 
     // 从JSON文件加载齿轮组数据
     useEffect(() => { 

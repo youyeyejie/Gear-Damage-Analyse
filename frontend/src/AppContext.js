@@ -18,11 +18,16 @@ const ProjectManager = {
         geometryModel: null,
     },
     detectionResult: {
-        damageType: null,
-        damageSeverity: null,
-        damageLocation: null,
-        damageArea: null,
-        damageDescription: null,
+        input: {
+            precision: 'low',
+        },
+        output: {
+            damageType: null,
+            damageSeverity: null,
+            damageLocation: null,
+            damageArea: null,
+            damageDescription: null,
+        },
         report: {
             name: null,
             size: null,
@@ -31,7 +36,6 @@ const ProjectManager = {
             name: null,
             size: null,
         },
-        precision: null,
     },
     selectedGearGroup: {
         groupNumber: null,
