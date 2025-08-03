@@ -18,16 +18,11 @@ const ProjectManager = {
         geometryModel: null,
     },
     detectionResult: {
-        input: {
-            precision: 'low',
-        },
-        output: {
-            damageType: null,
-            damageSeverity: null,
-            damageLocation: null,
-            damageArea: null,
-            damageDescription: null,
-        },
+        damageType: null,
+        damageSeverity: null,
+        damageLocation: null,
+        damageArea: null,
+        damageDescription: null,
         report: {
             name: null,
             size: null,
@@ -36,6 +31,7 @@ const ProjectManager = {
             name: null,
             size: null,
         },
+        precision: null,
     },
     selectedGearGroup: {
         groupNumber: null,
@@ -99,8 +95,6 @@ const ProjectManager = {
             name: null,
             size: null,
         },
-    },
-    simulationResult: {
     }
 };
 
@@ -302,7 +296,7 @@ const ProjectProvider = ({ children }) => {
             time: new Date().toLocaleString(),
             operation: '识别结果',
             type: '识别',
-            description: `识别结果：${result.output.damageType}，${result.output.damageSeverity}，${result.output.damageLocation}，${result.output.damageDescription}`,
+            description: `识别结果：${result.damageType}，${result.damageSeverity}，${result.damageLocation}，${result.damageDescription}`,
         };
         addLog(newLog);
     };
