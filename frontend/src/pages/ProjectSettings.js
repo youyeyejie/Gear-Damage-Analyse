@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useProjectContext } from '../AppContext';
 import { Form, Input, Button, Select, Table, Tabs, message } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
@@ -9,17 +9,16 @@ const { Option } = Select;
 function ProjectSettings() {
     const [form] = Form.useForm();
     const {
-        filteredLogs, //筛选出来日志列表
-        setSelectedLogType, //筛选日志的函数
-
+        logs, //日志列表
         currentProject, //当前项目相关信息
-        // setCurrentProject, //更新当前项目
         createProject, //创建项目
-        // updateProjectStatus, //更新项目状态
-
-        // updateDownloadFileList, //更新下载文件列表
         downloadFile, //下载文件
     } = useProjectContext();
+    const [selectedLogType, setSelectedLogType] = useState('all');
+
+    const filteredLogs = selectedLogType === 'all'
+        ? logs
+        : logs.filter(log => log.type === selectedLogType);
 
     const handleCreateProject = async (values) => {
         try {

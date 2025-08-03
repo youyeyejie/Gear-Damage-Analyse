@@ -16,11 +16,7 @@ const { Header, Content, Footer, Sider } = Layout;
 
 function AppContent() {
     const [collapsed, setCollapsed] = useState(false);
-    const { currentProject } = useProjectContext();
-
-    const handleMenuClick = (e) => {
-        // 移除未使用的currentPage状态更新
-    };
+    const { currentProject } = useProjectContext()
 
     return (
             <Router>
@@ -33,7 +29,6 @@ function AppContent() {
                         theme="dark"
                         defaultSelectedKeys={['projectSettings']}
                         mode="inline"
-                        onClick={handleMenuClick}
                         items={[
                             {
                                 key: 'projectSettings',

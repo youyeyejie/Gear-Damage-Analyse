@@ -8,25 +8,16 @@ const { Option } = Select;
 
 function AIDetection() {
     const {
-        // filteredLogs, //筛选出来日志列表
-        // setSelectedLogType, //筛选日志的函数
-
+        logs, //日志列表
+        setLogs, //更新日志列表
         currentProject, //当前项目相关信息
-        // setCurrentProject, //更新当前项目
-        // createProject, //创建项目
-        updateProjectStatus, //更新项目状态
-
-        updateDownloadFileList, //更新下载文件列表
+        setCurrentProject, //更新当前项目
         downloadFile, //下载文件
-
-        updateUploadFileList, //更新上传文件列表
-        clearUploadFileList, //清空上传文件列表
-
-        updateDetectionResult, //更新识别结果
     } = useProjectContext();
     const [isDetecting, setIsDetecting] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState('');
+    const [precision, setPrecision] = useState(currentProject.detectionResult.input.precision);
 
     // 获取base64编码的图片用于预览
     const getBase64 = file =>
@@ -38,14 +29,18 @@ function AIDetection() {
         });
 
     // 处理上传变化
-    const handleUploadChange = ({ file: currentFile }) => {
-        updateUploadFileList(currentFile, 'ai', 'add');
-            
-        // 文件开始上传前检查是否已建立项目
-        // 只在当前文件上传完成或失败时显示消息
+    const handleUploadChange = ({ fileList: currentFileList, file: currentFile }) => {
+        const updatedCurrentProject = {
+            ...currentProject,
+            uploadFileList: {
+                ...currentProject.uploadFileList,
+                aiDetectionImage: currentFileList,
+            },
+        };
+        setCurrentProject(updatedCurrentProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
         if (!currentProject.projectInfo.id) {
             message.warning('请先创建项目');
-            clearUploadFileList();
             setTimeout(() => {
                 window.location.href = '/';
             }, 500);
@@ -55,6 +50,15 @@ function AIDetection() {
             message.error(currentFile.response?.msg || '上传失败');
         } else if (currentFile.status === "done") {
             message.success(currentFile.response?.msg || '上传成功');
+            const updatedLogs = [{
+                id: Date.now(),
+                type: '识别',
+                operation: '上传文件',
+                description: `上传文件: ${currentFile.name}`,
+                time: new Date().toLocaleString(),
+            }, ...logs];
+            setLogs(updatedLogs);
+            sessionStorage.setItem('logs', JSON.stringify(updatedLogs));
         }
     };
 
@@ -70,9 +74,17 @@ function AIDetection() {
                 body: JSON.stringify({ fileName: file.response.data.fileName })
             }).then(response => response.json())
                 .then(resData => {
-                    if (resData.code === '0') {
+                    if (resData.code === '200') {
                         // 删除成功，更新前端状态
-                        updateUploadFileList(file, 'ai', 'remove');
+                        const updatedCurrentProject = {
+                            ...currentProject,
+                            uploadFileList: {
+                                ...currentProject.uploadFileList,
+                                aiDetectionImage: currentProject.uploadFileList.aiDetectionImage.filter(f => f !== file)
+                            }
+                        };
+                        setCurrentProject(updatedCurrentProject);
+                        sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
                         message.success(`已删除文件: ${file.name}`);
                     } else {
                         message.error(`删除失败: ${resData.msg}`);
@@ -100,7 +112,23 @@ function AIDetection() {
         }
 
         setIsDetecting(true);
-        updateProjectStatus('识别中');
+        const updatedCurrentProject = {
+            ...currentProject,
+            projectInfo: {
+                ...currentProject.projectInfo,
+                status: '识别中',
+            },
+            detectionResult: {
+                ...currentProject.detectionResult,
+                input: {
+                    ...currentProject.detectionResult.input,
+                    precision: precision,
+                }
+            }
+        };
+        setCurrentProject(updatedCurrentProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
+
         const images = [];
         currentProject.uploadFileList.aiDetectionImage.map(file => images.push(file.response.data.fileName));
 
@@ -120,43 +148,88 @@ function AIDetection() {
             setIsDetecting(false);
 
             if (resData.code === '200') {
-                updateDetectionResult(resData.data);
-                // 识别成功，更新结果
-                setTimeout(() => {
-                    updateProjectStatus('识别完成，待仿真');
-                }, 100);
-
                 // 添加报告到下载列表
+                const id = Date.now();
                 const reportFile = {
-                    id: Date.now(),
+                    id: id,
                     name: resData.data.report.name,
                     type: 'AI识别报告',
                     size: resData.data.report.size,
                     time: new Date().toLocaleString()
                 };
-                setTimeout(() => {
-                    updateDownloadFileList(reportFile);
-                }, 100);
 
                 const heatmapFile = {
-                    id: Date.now(),
+                    id: id + 1,
                     name: resData.data.heatmap.name,
                     type: 'AI识别热力图',
                     size: resData.data.heatmap.size,
                     time: new Date().toLocaleString()
                 };
-                setTimeout(() => {
-                    updateDownloadFileList(heatmapFile);
-                }, 100);
+
+                const updatedCurrentProject = {
+                    ...currentProject,
+                    projectInfo: {
+                        ...currentProject.projectInfo,
+                        status: '识别完成，待建模',
+                    },
+                    detectionResult: resData.data,
+                    downloadFileList: [...currentProject.downloadFileList, reportFile, heatmapFile],
+                };
+                setCurrentProject(updatedCurrentProject);
+                sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
+                const updatedLogs = [{
+                        id: id,
+                        type: '识别',
+                        operation: '更新状态',
+                        description: '状态更新为：识别完成，待建模',
+                        time: new Date().toLocaleString(),
+                    }, {
+                        id: id + 1,
+                        type: '识别',
+                        operation: '识别结果',
+                        description: `识别结果：${resData.data.output.damageType}，${resData.data.output.damageSeverity}，${resData.data.output.damageLocation}`,
+                        time: new Date().toLocaleString(),
+                    },
+                    {
+                        id: id + 2,
+                        type: '识别',
+                        operation: '新增可下载文件',
+                        description: `新增AI识别报告：${reportFile.name}`,
+                        time: new Date().toLocaleString(),
+                    }, {
+                        id: id + 3,
+                        type: '识别',
+                        operation: '新增可下载文件',
+                        description: `新增AI识别热力图：${heatmapFile.name}`,
+                        time: new Date().toLocaleString(),
+                    }, ...logs];
+                setLogs(updatedLogs);
+                sessionStorage.setItem('logs', JSON.stringify(updatedLogs));
                 message.success('AI识别成功');
             } else {
-                message.error(`识别失败: ${resData.msg}`);
-                updateProjectStatus('待识别');
+                throw new Error(resData.msg);
             }
         } catch (error) {
             setIsDetecting(false);
             message.error(`识别失败: ${error.message}`);
-            updateProjectStatus('待识别');
+            const updatedCurrentProject = { 
+                ...currentProject,
+                projectInfo: {
+                    ...currentProject.projectInfo,
+                    status: '待识别',
+                }
+            };
+            setCurrentProject(updatedCurrentProject);
+            sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
+            const updatedLogs = [{
+                id: Date.now(),
+                type: '识别',
+                operation: '识别失败',
+                description: '识别失败：' + error.message,
+                time: new Date().toLocaleString(),
+            }, ...logs];
+            setLogs(updatedLogs);
+            sessionStorage.setItem('logs', JSON.stringify(updatedLogs));
         }
     };
 
@@ -238,9 +311,9 @@ function AIDetection() {
                     <label style={{ width: '120px', marginRight: '16px' }}>识别精度设置:</label>
                     <Select
                         defaultValue="low"
-                        style={{ width: 120 }}
-                        onChange={value => updateDetectionResult({ input: { precision: value } })}
-                        value={currentProject.detectionResult.input.precision}
+                        style={{ flex: 1, maxWidth: '300px' }}
+                        onChange={value => setPrecision(value)}
+                        value={precision}
                     >
                         <Option value="high">高精度</Option>
                         <Option value="medium">中等精度</Option>
@@ -295,7 +368,7 @@ function AIDetection() {
                             </div>
                         </Col>
                         <Col span={12}>
-                            <div className="card" style={{ marginTop: '16px', padding: '16px' }}>
+                            <div className="card" style={{ height: '100%', padding: '16px' }}>
                                 <h3 style={{ marginBottom: '16px' }}>损伤热力图</h3>
                                 {renderHeatmap()}
                             </div>

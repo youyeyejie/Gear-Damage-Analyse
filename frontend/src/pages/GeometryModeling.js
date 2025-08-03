@@ -8,26 +8,13 @@ const { Option } = Select;
 
 function GeometryModeling() {
     const {
-        // filteredLogs, //筛选出来日志列表
-        // setSelectedLogType, //筛选日志的函数
-
+        logs, //日志列表
+        setLogs, //更新日志列表
         currentProject, //当前项目相关信息
-        // setCurrentProject, //更新当前项目
-        // createProject, //创建项目
-        updateProjectStatus, //更新项目状态
-
-        updateDownloadFileList, //更新下载文件列表
+        setCurrentProject, //更新当前项目
         downloadFile, //下载文件
-
-        updateUploadFileList, //更新上传文件列表
-        // clearUploadFileList, //清空上传文件列表
-
-        // updateDetectionResult, //更新识别结果
-        
         gearData, //齿轮数据
-        loadGearData, //加载齿轮数据
-        updateSelectedGearGroup, //更新齿轮组
-        updateModelingResult, //更新建模结果
+        loadGearData, //加载齿轮配置
     } = useProjectContext();
     const [form] = Form.useForm();
     const [isModeling, setIsModeling] = useState(false);
@@ -42,8 +29,12 @@ function GeometryModeling() {
             message.warn('请先创建项目');
             return;
         }
-        const group = gearData.find(g => g.groupNumber === parseInt(groupId));
-        updateSelectedGearGroup(group);
+        const updatedCurrentProject = {
+            ...currentProject,
+            selectedGearGroup: gearData.find(g => g.groupNumber === parseInt(groupId)),
+        };
+        setCurrentProject(updatedCurrentProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
     };
 
     const handleStartModeling = async () => {
@@ -58,7 +49,15 @@ function GeometryModeling() {
 
         try {
             setIsModeling(true);
-            updateProjectStatus('建模中');
+            const updatedCurrentProject = {
+                ...currentProject,
+                projectInfo: {
+                    ...currentProject.projectInfo,
+                    status: '建模中',
+                },
+            };
+            setCurrentProject(updatedCurrentProject);
+            sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
             message.info('开始几何建模，请稍候...');
 
             const response = await fetch('http://localhost:5000/api/geometryModeling', {
@@ -76,11 +75,7 @@ function GeometryModeling() {
             setIsModeling(false);
 
             if (resData.code === '200') {
-                updateProjectStatus('建模完成，待仿真');
-                // 识别成功，更新结果
-                updateModelingResult(resData.data);
-
-                // 添加模型到下载列表
+                 // 添加模型到下载列表
                 const modelFile = {
                     id: Date.now(),
                     name: resData.data.model.name,
@@ -88,20 +83,60 @@ function GeometryModeling() {
                     size: resData.data.model.size,
                     time: new Date().toLocaleString()
                 };
-                updateDownloadFileList(modelFile);
-                // if (updateDownloadFileList(modelFile)) {
-                //     updateUploadFileList(modelFile, 'model', 'add');
-                // }
+                
+                const updatedCurrentProject = {
+                    ...currentProject,
+                    projectInfo: {
+                        ...currentProject.projectInfo,
+                        status: '建模完成，待仿真',
+                    },
+                    modelingResult: resData.data,
+                    downloadFileList: [...currentProject.downloadFileList, modelFile]
+                };
+                setCurrentProject(updatedCurrentProject);
+                sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
 
+                const id = Date.now();
+                const updatedLogs = [{ 
+                        id: id,
+                        type: '建模',
+                        operation: '更新状态',
+                        description: '状态更新为：建模完成，待仿真',
+                        time: new Date().toLocaleString(),
+                    }, {
+                        id: id + 1,
+                        type: '建模',
+                        operation: '新增可下载文件',
+                        description: `新增几何模型：${modelFile.name}`,
+                        time: new Date().toLocaleString(),
+                    }, ...logs];
+                setLogs(updatedLogs);
+                sessionStorage.setItem('logs', JSON.stringify(updatedLogs));
                 message.success('几何建模完成');
             } else {
-                updateProjectStatus('待建模');
-                message.error('几何建模失败：' + resData.msg);
+                throw new Error(resData.message);
             }
         } catch (error) {
             setIsModeling(false);
-            updateProjectStatus('待建模');
             message.error('几何建模失败：' + error.message);
+            const updatedCurrentProject = {
+                ...currentProject,
+                projectInfo: {
+                    ...currentProject.projectInfo,
+                    status: '待建模',
+                },
+            };
+            setCurrentProject(updatedCurrentProject);
+            sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
+            const updatedLogs = [{
+                id: Date.now(),
+                type: '建模',
+                operation: '建模失败',
+                description: '建模失败：' + error.message,
+                time: new Date().toLocaleString(),
+            }, ...logs];
+            setLogs(updatedLogs);
+            sessionStorage.setItem('logs', JSON.stringify(updatedLogs));
         }
     };
 

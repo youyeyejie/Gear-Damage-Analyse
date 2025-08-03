@@ -107,7 +107,7 @@ def delete_file():
         try:
             os.remove(file_path)
             return jsonify({
-                "code": "0",
+                "code": "200",
                 "msg": "文件删除成功",
                 "data": {}
             }), 200
