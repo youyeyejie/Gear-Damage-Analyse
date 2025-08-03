@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 import time
 import random
+import shutil
 
 app = Flask(__name__)
 CORS(app)  # 解决跨域问题
@@ -195,6 +196,43 @@ def ai_detection():
         }), 200
     except Exception as e:
         return jsonify({"code": "500", "msg": f"AI识别失败: {str(e)}", "data": {}}), 500
+
+@app.route('/api/geometryModeling', methods=['POST'])
+def geometry_modeling():
+    global full_path
+    try:
+        data = request.get_json()
+        if not data or 'groupNumber' not in data or 'detectionResult' not in data:
+            return jsonify({"code": "400", "msg": "无效的建模数据，缺少必要参数", "data": {}}), 400
+
+        group_number = data['groupNumber']
+        detection_result = data['detectionResult']
+
+        # 确保项目路径已设置
+        if not full_path:
+            return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
+
+        # 模拟建模
+        time.sleep(2)
+        filename = f"Model_{time.strftime('%Y%m%d%H%M%S')}.STEP"
+        # 复制 ../data/model/1.step 到 full_path 下
+        source_path = os.path.join(os.path.dirname(__file__), '../data/model/1.step')
+        destination_path = os.path.join(full_path, filename)
+        shutil.copy2(source_path, destination_path)
+
+        result = {}
+        result['model'] = {
+            'name': filename,
+            'size': "{:.2f}KB".format(os.path.getsize(destination_path) / 1024),
+        }
+
+        return jsonify({
+            "code": "200",
+            "msg": "几何建模成功",
+            "data": result
+        }), 200
+    except Exception as e:
+        return jsonify({"code": "500", "msg": f"请求处理失败: {str(e)}", "data": {}}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

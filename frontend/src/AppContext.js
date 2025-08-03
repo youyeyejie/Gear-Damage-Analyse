@@ -33,9 +33,74 @@ const ProjectManager = {
         },
         precision: null,
     },
+    selectedGearGroup: {
+        groupNumber: null,
+        masterGear: {
+            model: "06-4880（06-4163）",
+            parameters: {
+                "中心距a（mm）": null,
+                "模数mn（mm）": null,
+                "齿数z": null,
+                "变位系数x": null,
+                "螺旋角β（°）": null,
+                "压力角α（°）": null,
+                "齿顶圆da-φ（mm）": null,
+                "齿宽b（mm）": null
+            },
+            materialProperties: {
+                "材料名称": null,
+                "密度（g/cm3）": null,
+                "弹性模量E（MPa）": null,
+                "泊松比v": null,
+                "屈服应力（MPa）": null,
+                "强度系数K": null,
+                "硬化指数n": null,
+                "摩擦系数": null
+            },
+            loadData: {
+                "扭矩（N·m）": null,
+                "转速（r/min）": null,
+            }
+        },
+        slaveGear: {
+            model: "06-4176",
+            parameters: {   
+                "中心距a（mm）": null,
+                "模数mn（mm）": null,
+                "齿数z": null,
+                "变位系数x": null,
+                "螺旋角β（°）": null,
+                "压力角α（°）": null,
+                "齿顶圆da-φ（mm）": null,
+                "齿宽b（mm）": null
+            },
+            materialProperties: {
+                "材料名称": null,
+                "密度（g/cm3）": null,
+                "弹性模量E（MPa）": null,
+                "泊松比v": null,
+                "屈服应力（MPa）": null,
+                "强度系数K": null,
+                "硬化指数n": null,
+                "摩擦系数": null
+            },
+            loadData: {
+                "扭矩（N·m）": null,
+                "转速（r/min）": null
+            }
+        }
+    },
+    modelingResult: {
+        model: {
+            name: null,
+            size: null,
+        },
+    }
 };
 
 const Logs = [];
+
+const gearGroups = [];
 
 // Context Provider组件
 const ProjectProvider = ({ children }) => {
@@ -48,6 +113,10 @@ const ProjectProvider = ({ children }) => {
         return savedLogs ? JSON.parse(savedLogs) : Logs;
     });
     const [selectedLogType, setSelectedLogType] = useState('all');
+    const [gearData, setGearData] = useState(() => {
+        const savedGearData = sessionStorage.getItem('gearData');
+        return savedGearData ? JSON.parse(savedGearData) : gearGroups;
+    });
 
     // 添加新日志
     const addLog = (newLog) => {
@@ -66,35 +135,16 @@ const ProjectProvider = ({ children }) => {
 
     // 创建新项目
     const createProject = (projectName, projectPath) => {
+        const projectInfo = {
+            id: Date.now(),
+            name: projectName,
+            path: projectPath,
+            status: '待识别',
+            createTime: new Date().toLocaleString(),
+        };
         const newProject = {
-            projectInfo: {
-                id: Date.now(),
-                name: projectName,
-                path: projectPath,
-                status: '待识别',
-                createTime: new Date().toLocaleString(),
-            },
-            downloadFileList: [],
-            uploadFileList: {
-                aiDetectionImage: [],
-                geometryModel: null,
-            },
-            detectionResult: {
-                damageType: null,
-                damageSeverity: null,
-                damageLocation: null,
-                damageArea: null,
-                damageDescription: null,
-                report: {
-                    name: null,
-                    size: null,
-                },
-                heatmap: {
-                    name: null,
-                    size: null,
-                },
-                precision: null,
-            },
+            ...ProjectManager,
+            projectInfo,
         };
         console.log(newProject);
 
@@ -251,6 +301,59 @@ const ProjectProvider = ({ children }) => {
         addLog(newLog);
     };
 
+    const loadGearData = async () => {
+        try {
+            // 从本地JSON文件加载齿轮数据: frontend/src/gear.json
+            const response = await fetch('/gear.json');
+            if (!response.ok) {
+                throw new Error(`HTTP错误! 状态码: ${response.status}`);
+            }
+            const gearDataFromFile = await response.json();
+            // 从JSON数据中提取groups数组赋值给齿轮数据
+            setGearData(gearDataFromFile.groups);
+        } catch (error) {
+            message.error('加载齿轮数据失败：' + error.message); 
+        }
+    };
+
+    // 更新齿轮组编号
+    const updateSelectedGearGroup = (selectedGearGroup) => {
+        setCurrentProject(prevProject => ({
+            ...prevProject,
+            selectedGearGroup: selectedGearGroup,
+        }));
+        sessionStorage.setItem('currentProject', JSON.stringify(currentProject));
+
+        // 记录日志
+        const newLog = {
+            id: Date.now(),
+            time: new Date().toLocaleString(),
+            operation: '选择齿轮组',
+            type: '建模',
+            description: `选择齿轮组：${selectedGearGroup.groupNumber}`,
+        };
+        addLog(newLog);
+    };
+
+    // 更新建模结果
+    const updateModelingResult = (modelingResult) => {
+        setCurrentProject(prevProject => ({
+            ...prevProject,
+            modelingResult: modelingResult,
+        }));
+        sessionStorage.setItem('currentProject', JSON.stringify(currentProject));
+
+        // 记录日志
+        const newLog = {
+            id: Date.now(),
+            time: new Date().toLocaleString(),
+            operation: '建模结果',
+            type: '建模',
+            description: `建模结果：${modelingResult.model.name}，${modelingResult.model.size}`,
+        };
+        addLog(newLog);
+    };
+
 
     // 导出的context值
     const contextValue = {
@@ -269,6 +372,11 @@ const ProjectProvider = ({ children }) => {
         clearUploadFileList, //清空上传文件列表
 
         updateDetectionResult, //更新识别结果
+
+        gearData, //齿轮数据
+        loadGearData, //加载齿轮数据
+        updateSelectedGearGroup, //更新齿轮组
+        updateModelingResult, //更新建模结果
     };
 
     return (

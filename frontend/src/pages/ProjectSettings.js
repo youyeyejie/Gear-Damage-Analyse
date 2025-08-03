@@ -8,8 +8,6 @@ const { Option } = Select;
 
 function ProjectSettings() {
     const [form] = Form.useForm();
-    // const { setSelectedLogType, filteredLogs, currentProject,
-    //     createProject, downloadDataList, downloadFile } = useProjectContext();
     const {
         filteredLogs, //筛选出来日志列表
         setSelectedLogType, //筛选日志的函数

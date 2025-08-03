@@ -7,9 +7,6 @@ import '../App.css';
 const { Option } = Select;
 
 function AIDetection() {
-    // const { currentProject, updateProjectStatus, uploadDataList, 
-    //     setUploadDataList, uploadFileLog, detectionResult, updateDetectionResult, 
-    //     addDownloadFile, downloadFile } = useProjectContext();
     const {
         // filteredLogs, //筛选出来日志列表
         // setSelectedLogType, //筛选日志的函数
@@ -165,12 +162,12 @@ function AIDetection() {
                 message.success('AI识别成功');
             } else {
                 message.error(`识别失败: ${resData.msg}`);
-                updateProjectStatus('识别失败');
+                updateProjectStatus('待识别');
             }
         } catch (error) {
             setIsDetecting(false);
             message.error(`识别失败: ${error.message}`);
-            updateProjectStatus('识别失败');
+            updateProjectStatus('待识别');
         }
     };
 
@@ -276,7 +273,8 @@ function AIDetection() {
                     type="primary"
                     icon={<DownloadOutlined />}
                     onClick={handleDownloadReport}
-                    hidden={!currentProject.detectionResult.report}
+                    hidden={!currentProject.detectionResult.report.name}
+                    style={{ marginRight: '16px' }}
                 >
                     下载AI预测报告
                 </Button>
@@ -284,7 +282,8 @@ function AIDetection() {
                     type="primary"
                     icon={<DownloadOutlined />}
                     onClick={handleDownloadHeatmap}
-                    hidden={!currentProject.detectionResult.heatmap}
+                    hidden={!currentProject.detectionResult.heatmap.name}
+                    style={{ marginRight: '16px' }}
                 >
                     下载热力图
                 </Button>
