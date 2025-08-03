@@ -8,26 +8,13 @@ const { Option } = Select;
 
 function GeometryModeling() {
     const {
-        // filteredLogs, //筛选出来日志列表
-        // setSelectedLogType, //筛选日志的函数
-
+        logs, //日志列表
+        setLogs, //更新日志列表
         currentProject, //当前项目相关信息
-        // setCurrentProject, //更新当前项目
-        // createProject, //创建项目
-        updateProjectStatus, //更新项目状态
-
-        updateDownloadFileList, //更新下载文件列表
+        setCurrentProject, //更新当前项目
         downloadFile, //下载文件
-
-        // updateUploadFileList, //更新上传文件列表
-        // clearUploadFileList, //清空上传文件列表
-
-        // updateDetectionResult, //更新识别结果
-        
         gearData, //齿轮数据
-        loadGearData, //加载齿轮数据
-        updateSelectedGearGroup, //更新齿轮组
-        updateModelingResult, //更新建模结果
+        loadGearData, //加载齿轮配置
     } = useProjectContext();
     const [form] = Form.useForm();
     // const [gearGroups, setGearGroups] = useState([]);
@@ -46,23 +33,35 @@ function GeometryModeling() {
             message.warn('请先创建项目');
             return;
         }
-        const group = gearData.find(g => g.groupNumber === parseInt(groupId));
-        updateSelectedGearGroup(group);
+        const updatedCurrentProject = {
+            ...currentProject,
+            selectedGearGroup: gearData.find(g => g.groupNumber === parseInt(groupId)),
+        };
+        setCurrentProject(updatedCurrentProject);
+        sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
     };
 
     const handleStartModeling = async () => {
-        if (!currentProject.selectedGearGroup) {
+        if (!currentProject.selectedGearGroup.groupNumber) {
             message.error('请先选择齿轮配置组');
             return;
         }
-        if (!currentProject.detectionResult.damageType) {
+        if (!currentProject.detectionResult.output?.damageType) {
             message.error('请先进行损伤识别');
             return;
         }
 
         try {
             setIsModeling(true);
-            updateProjectStatus('建模中');
+            const updatedCurrentProject = {
+                ...currentProject,
+                projectInfo: {
+                    ...currentProject.projectInfo,
+                    status: '建模中',
+                },
+            };
+            setCurrentProject(updatedCurrentProject);
+            sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
             message.info('开始几何建模，请稍候...');
 
             const response = await fetch('http://localhost:5000/api/geometryModeling', {
@@ -80,19 +79,7 @@ function GeometryModeling() {
             setIsModeling(false);
 
             if (resData.code === '200') {
-                updateProjectStatus('建模完成，待仿真');
-                // 识别成功，更新结果
-                const result = {
-                    model: {
-                        name: resData.data.model.name,
-                        size: resData.data.model.size,
-                    },
-                };
-                updateModelingResult(result);
-                console.log(1, result);
-                console.log(2, currentProject);
-
-                // 添加模型到下载列表
+                 // 添加模型到下载列表
                 const modelFile = {
                     id: Date.now(),
                     name: resData.data.model.name,
@@ -100,18 +87,60 @@ function GeometryModeling() {
                     size: resData.data.model.size,
                     time: new Date().toLocaleString()
                 };
-                updateDownloadFileList(modelFile);
-                console.log(3, currentProject);
+                
+                const updatedCurrentProject = {
+                    ...currentProject,
+                    projectInfo: {
+                        ...currentProject.projectInfo,
+                        status: '建模完成，待仿真',
+                    },
+                    modelingResult: resData.data,
+                    downloadFileList: [...currentProject.downloadFileList, modelFile]
+                };
+                setCurrentProject(updatedCurrentProject);
+                sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
 
+                const id = Date.now();
+                const updatedLogs = [{ 
+                        id: id,
+                        type: '建模',
+                        operation: '更新状态',
+                        description: '状态更新为：建模完成，待仿真',
+                        time: new Date().toLocaleString(),
+                    }, {
+                        id: id + 1,
+                        type: '建模',
+                        operation: '新增可下载文件',
+                        description: `新增几何模型：${modelFile.name}`,
+                        time: new Date().toLocaleString(),
+                    }, ...logs];
+                setLogs(updatedLogs);
+                sessionStorage.setItem('logs', JSON.stringify(updatedLogs));
                 message.success('几何建模完成');
             } else {
-                updateProjectStatus('待建模');
-                message.error('几何建模失败：' + resData.msg);
+                throw new Error(resData.message);
             }
         } catch (error) {
             setIsModeling(false);
-            updateProjectStatus('待建模');
             message.error('几何建模失败：' + error.message);
+            const updatedCurrentProject = {
+                ...currentProject,
+                projectInfo: {
+                    ...currentProject.projectInfo,
+                    status: '待建模',
+                },
+            };
+            setCurrentProject(updatedCurrentProject);
+            sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
+            const updatedLogs = [{
+                id: Date.now(),
+                type: '建模',
+                operation: '建模失败',
+                description: '建模失败：' + error.message,
+                time: new Date().toLocaleString(),
+            }, ...logs];
+            setLogs(updatedLogs);
+            sessionStorage.setItem('logs', JSON.stringify(updatedLogs));
         }
     };
 
@@ -163,7 +192,7 @@ function GeometryModeling() {
                     </Form.Item>
 
                     <Form.Item label="损伤类型">
-                        <Input value={currentProject.detectionResult.damageType} placeholder="请先进行识别" readOnly />
+                        <Input value={currentProject.detectionResult.output?.damageType} placeholder="请先进行识别" readOnly />
                     </Form.Item>
                 </Form>
             </div>
@@ -189,7 +218,6 @@ function GeometryModeling() {
                 </Button>
             </div>
             {currentProject.modelingResult?.model.name && (
-            // {currentProject.modelingResult && (
                 <div className="card" style={{ marginTop: '24px' }}>
                     <div style={{ display: 'flex', gap: '16px' }}>
                         <div style={{ flex: 1, padding: '16px', background: '#f0f2f5', borderRadius: '8px' }}>
@@ -197,7 +225,7 @@ function GeometryModeling() {
                             <p><strong>配置组：</strong>第{currentProject.selectedGearGroup.groupNumber}组</p>
                             <p><strong>主齿轮模型：</strong>{currentProject.selectedGearGroup.masterGear.model}</p>
                             <p><strong>从齿轮模型：</strong>{currentProject.selectedGearGroup.slaveGear.model}</p>
-                            <p><strong>损伤类型：</strong>{currentProject.detectionResult.damageType}</p>
+                            <p><strong>损伤类型：</strong>{currentProject.detectionResult.output?.damageType}</p>
                         </div>
                         <div style={{ flex: 1, padding: '16px', background: '#f0f2f5', borderRadius: '8px', textAlign: 'center' }}>
                             <h3>模型预览</h3>
