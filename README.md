@@ -94,7 +94,7 @@
 
 ## 参考资料
 - 前后端通信 API 参考：
-    - [MDN Web Docs](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Referenc)
+    - [MDN Web Docs](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Reference)
 - React 样式参考
     - [Ant Design](https://ant-design.antgroup.com/components/overview-cn/)
 

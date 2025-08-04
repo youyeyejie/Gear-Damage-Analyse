@@ -32,7 +32,7 @@ def create_project():
             return jsonify({"code": "500", "msg": f"创建项目文件夹失败: {str(e)}", "data": {}}), 500
         
         return jsonify({
-            "code": "0",
+            "code": "200",
             "msg": "项目创建成功",
             "data": {
                 "projectName": project_name,
@@ -80,7 +80,7 @@ def upload_file():
     try:
         file.save(file_path)
         return jsonify({
-            "code": "0",
+            "code": "200",
             "msg": "文件上传成功",
             "data": {
                 "fileName": filename,
