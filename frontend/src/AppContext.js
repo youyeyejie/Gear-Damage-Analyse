@@ -15,11 +15,11 @@ const ProjectManager = {
     downloadFileList: [],
     uploadFileList: {
         aiDetectionImage: [],
-        geometryModel: null,
+        geometryModel: [],
     },
     detectionResult: {
         input: {
-            precision: 'low',
+            precision: null,
         },
         output: {
             damageType: null,
@@ -102,7 +102,7 @@ const ProjectManager = {
     },
     simulationResult: {
         input: {
-            meshDensity: 'low',
+            meshDensity: null,
             boundaryCondition: {},
         },
     }

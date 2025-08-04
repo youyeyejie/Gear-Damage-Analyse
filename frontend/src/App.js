@@ -16,6 +16,10 @@ const { Header, Content, Footer, Sider } = Layout;
 
 function AppContent() {
     const [collapsed, setCollapsed] = useState(false);
+    const [ selectedMenu, setSelectedMenu] = useState(() => {
+        const savedMenu = sessionStorage.getItem('selectedMenu');
+        return savedMenu || 'projectSettings';
+    });
     const { currentProject } = useProjectContext()
 
     return (
@@ -27,44 +31,73 @@ function AppContent() {
                     </div>
                     <Menu
                         theme="dark"
-                        defaultSelectedKeys={['projectSettings']}
+                        defaultSelectedKeys={[selectedMenu]}
+                        selectedKeys={[selectedMenu]}
                         mode="inline"
                         items={[
                             {
                                 key: 'projectSettings',
                                 icon: <SettingOutlined />,
-                                label: <Link to="/">项目设置</Link>,
+                                label: <Link to="/" onClick={() => {
+                                    setSelectedMenu('projectSettings');
+                                    sessionStorage.setItem('selectedMenu', 'projectSettings');
+                                }}>项目设置</Link>,
                             },
                             {
                                 key: 'aiDetection',
                                 icon: <FileTextOutlined />,
-                                label: <Link to="/ai-detection">智能识别</Link>,
+                                label: <Link to="/ai-detection" onClick={() => {
+                                    setSelectedMenu('aiDetection');
+                                    sessionStorage.setItem('selectedMenu', 'aiDetection');
+                                }}>智能识别</Link>,
                             },
                             {
                                 key: 'geometryModeling',
                                 icon: <DatabaseOutlined />,
-                                label: <Link to="/geometry-modeling">几何建模</Link>,
+                                label: <Link to="/geometry-modeling" onClick={() => {
+                                    setSelectedMenu('geometryModeling');
+                                    sessionStorage.setItem('selectedMenu', 'geometryModeling');
+                                }}>几何建模</Link>,
                             },
                             {
                                 key: 'simulationSettings',
                                 icon: <SlidersOutlined />,
-                                label: <Link to="/simulation-settings">仿真设置</Link>,
+                                label: <Link to="/simulation-settings" onClick={() => {
+                                    setSelectedMenu('simulationSettings');
+                                    sessionStorage.setItem('selectedMenu', 'simulationSettings');
+                                }}>仿真计算</Link>,
                             },
                             {
                                 key: 'dataVisualization',
                                 icon: <BarChartOutlined />,
-                                label: <Link to="/data-visualization">数据展示</Link>,
+                                label: <Link to="/data-visualization" onClick={() => {
+                                    setSelectedMenu('dataVisualization');
+                                    sessionStorage.setItem('selectedMenu', 'dataVisualization');
+                                }}>数据展示</Link>,
                             },
                         ]}
                     />
                 </Sider>
                 <Layout className="site-layout">
-                    <Header className="site-layout-background" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 24px' }}>
+                    <Header className={`site-layout-background ${collapsed ? 'ant-layout-header-collapsed' : ''}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 24px' }}>
                         <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-                            当前项目状态: <span style={{ color: '#1890ff' }}>{currentProject?.projectInfo?.status || '未创建项目'}</span>
+                            <span>
+                                当前项目: &nbsp;
+                                <span style={{ color: '#1890ff' }}>
+                                    {currentProject?.projectInfo?.name || '未创建项目'}
+                                </span>
+                            </span>
+                            {currentProject?.projectInfo?.name && (
+                                <span style={{ marginLeft: '30px' }}>
+                                    状态: &nbsp;
+                                    <span style={{ color: '#1890ff' }}>
+                                        {currentProject?.projectInfo?.status || '未创建项目'}
+                                    </span>
+                                </span>
+                            )}
                         </div>
                     </Header>
-                    <Content style={{ margin: '0 16px' }}>
+                    <Content className={collapsed ? 'ant-layout-content-collapsed' : ''}>
                         <div className="site-layout-background" style={{ padding: 24, minHeight: 360 }}>
                             <Routes>
                                 <Route path="/" element={<ProjectSettings />} />

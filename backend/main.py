@@ -121,27 +121,15 @@ def ai_detection():
     global full_path
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"code": "400", "msg": "无效的请求数据", "data": {}}), 400
-
-        # 检查图片文件名列表是否存在
-        if 'images' not in data:
-            return jsonify({"code": "400", "msg": "未提供图片文件名列表", "data": {}}), 400
-
-        images = data['images']
-        if not images or not isinstance(images, list):
-            return jsonify({"code": "400", "msg": "未提供有效图片文件名列表", "data": {}}), 400
-
-        # 获取识别精度参数
-        precision = data['input']['precision']
-        if precision not in ['high', 'medium', 'low']:
-            precision = 'medium'
-
+        if not data or 'input' not in data or 'images' not in data:
+            return jsonify({"code": "400", "msg": "无效的请求数据，缺少必要参数", "data": {}}), 400
         # 确保项目路径已设置
         if not full_path:
             return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
-        
-        # 图片路径列表
+  
+        input = data['input']
+        precision = input['precision']
+        images = data['images']
         file_paths = []
         for file in images:
             file_path = os.path.join(full_path, file)
@@ -186,7 +174,6 @@ def ai_detection():
             f.write("损伤面积："+output['damageArea']+"\n")
             f.write("损伤位置："+output['damageLocation']+"\n")
             f.write("损伤描述："+output['damageDescription']+"\n")
-        
         result['report'] = {
             'name': report_name,
             'size': "{:.2f}KB".format(os.path.getsize(report_path) / 1024),
@@ -205,15 +192,14 @@ def geometry_modeling():
     global full_path
     try:
         data = request.get_json()
-        if not data or 'groupNumber' not in data or 'detectionResult' not in data:
+        if not data or 'groupNumber' not in data or 'input' not in data:
             return jsonify({"code": "400", "msg": "无效的建模数据，缺少必要参数", "data": {}}), 400
-
-        group_number = data['groupNumber']
-        detection_result = data['detectionResult']
-
         # 确保项目路径已设置
         if not full_path:
             return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
+
+        group_number = data['groupNumber']
+        input = data['input']
 
         # 模拟建模
         time.sleep(2)
@@ -236,6 +222,61 @@ def geometry_modeling():
         }), 200
     except Exception as e:
         return jsonify({"code": "500", "msg": f"请求处理失败: {str(e)}", "data": {}}), 500
+
+@app.route('/api/simulation', methods=['POST'])
+def simulation():
+    global full_path
+    try:
+        data = request.get_json()
+        if not data or 'groupNumber' not in data or 'input' not in data:
+            return jsonify({"code": "400", "msg": "无效的仿真数据，缺少必要参数", "data": {}}), 400
+        # 确保项目路径已设置
+        if not full_path:
+            return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
+
+        group_number = data['groupNumber']
+        input = data['input']
+        model_name = data['model']
+        model_path = os.path.join(full_path, model_name)
+
+        # 模拟模拟
+        time.sleep(2)
+        # 生成模拟结果
+
+        result = {}
+        result['input'] = input
+        output = {
+            'simulationDescription': '这是一个模拟的仿真结果',
+        }
+        result['output'] = output
+
+        # 模拟云图
+        cloudmap_filename = os.path.basename(model_path)
+        cloudmap_path = os.path.join(full_path, cloudmap_filename)
+        result['cloudmap'] = {
+            'name': cloudmap_filename,
+            'size': "{:.2f}KB".format(os.path.getsize(cloudmap_path) / 1024),
+        }
+
+        # 创建一个模拟的报告文件
+        report_name = f"仿真报告_{time.strftime('%Y%m%d%H%M%S')}.txt"
+        report_path = os.path.join(full_path, report_name)
+        with open(report_path, 'w') as f:
+            f.write("这是一个模拟的仿真报告\n")
+            f.write("仿真描述："+output['simulationDescription']+"\n")
+        result['report'] = {
+            'name': report_name,
+            'size': "{:.2f}KB".format(os.path.getsize(report_path) / 1024),
+        }
+
+        return jsonify({
+            "code": "200",
+            "msg": "仿真成功",
+            "data": result
+        }), 200
+    except Exception as e:
+        return jsonify({"code": "500", "msg": f"仿真失败: {str(e)}", "data": {}}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

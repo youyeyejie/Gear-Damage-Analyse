@@ -113,7 +113,19 @@ function ProjectSettings() {
                         <p>项目名称：{currentProject.projectInfo.name}</p>
                         <p>项目路径：{currentProject.projectInfo.path}</p>
                         <p>创建时间：{currentProject.projectInfo.createTime}</p>
-                        <p>项目状态：<span className={`status-tag ${currentProject.projectInfo.status.includes('待') ? 'pending' : currentProject.projectInfo.status.includes('中') ? 'processing' : currentProject.projectInfo.status.includes('已') ? 'completed' : 'failed'}`}>{currentProject.projectInfo.status}</span></p>
+                        <p>项目状态：
+                            <span className=
+                                {`status-tag 
+                                    ${currentProject.projectInfo.status.includes('待') && currentProject.projectInfo.status.includes('完成') ? 'processing' : 
+                                    currentProject.projectInfo.status.includes('待') ? 'pending' :
+                                    currentProject.projectInfo.status.includes('完成') || currentProject.projectInfo.status.includes('已完成') ? 'completed' :
+                                    currentProject.projectInfo.status.includes('中') ? 'processing' :
+                                    'failed'}`
+                                }
+                            >
+                                {currentProject.projectInfo.status}
+                            </span>
+                        </p>
                     </div>
                 )}
             </div>

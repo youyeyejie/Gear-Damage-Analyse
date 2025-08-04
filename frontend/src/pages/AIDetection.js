@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Upload, message, Row, Col, Select, Image } from 'antd';
-import { DownloadOutlined, PlayCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { DownloadOutlined, PlayCircleOutlined, PlusOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useProjectContext } from '../AppContext';
 import '../App.css';
 
@@ -17,7 +17,7 @@ function AIDetection() {
     const [isDetecting, setIsDetecting] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState('');
-    const [precision, setPrecision] = useState(currentProject.detectionResult.input.precision);
+    const [precision, setPrecision] = useState(currentProject.detectionResult.input.precision || 'low');
 
     // 获取base64编码的图片用于预览
     const getBase64 = file =>
@@ -194,13 +194,13 @@ function AIDetection() {
                         id: id + 2,
                         type: '识别',
                         operation: '新增可下载文件',
-                        description: `新增AI识别报告：${reportFile.name}`,
+                        description: `新增AI识别报告：${reportFile.name}，大小：${reportFile.size}`,
                         time: new Date().toLocaleString(),
                     }, {
                         id: id + 3,
                         type: '识别',
                         operation: '新增可下载文件',
-                        description: `新增AI识别热力图：${heatmapFile.name}`,
+                        description: `新增AI识别热力图：${heatmapFile.name}，大小：${heatmapFile.size}`,
                         time: new Date().toLocaleString(),
                     }, ...logs];
                 setLogs(updatedLogs);
@@ -235,8 +235,8 @@ function AIDetection() {
 
     // 下载AI预测报告
     const handleDownloadReport = () => {
-        if (!currentProject.detectionResult.report) {
-            message.warning('请先完成AI识别');
+        if (!currentProject.detectionResult.report?.name) {
+            message.error('请先完成AI识别');
             return;
         }
         downloadFile(currentProject.detectionResult.report);
@@ -244,8 +244,8 @@ function AIDetection() {
 
     // 下载热力图
     const handleDownloadHeatmap = () => {
-        if (!currentProject.detectionResult.heatmap) {
-            message.warning('请先完成AI识别');
+        if (!currentProject.detectionResult.heatmap?.name) {
+            message.error('请先完成AI识别');
             return;
         }
         downloadFile(currentProject.detectionResult.heatmap);
@@ -253,8 +253,13 @@ function AIDetection() {
 
     // 展示热力图
     const renderHeatmap = () => {
-        if (!currentProject.detectionResult.heatmap) {
-            return <div>暂无热力图数据</div>;
+        if (!currentProject.detectionResult.heatmap?.name) {
+            return (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', background: '#e8e8e8', borderRadius: '8px', marginTop: '16px' }}>
+                    <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                    <p style={{ marginLeft: '16px' }}>暂无损伤热力图预览</p>
+                </div>
+            );
         }
 
         // 构建图片URL
@@ -310,13 +315,13 @@ function AIDetection() {
                 <div className="precision-selector" style={{ display: 'flex', alignItems: 'center' }}>
                     <label style={{ width: '120px', marginRight: '16px' }}>识别精度设置:</label>
                     <Select
-                        defaultValue="low"
+                        defaultValue={currentProject.detectionResult.input.precision || 'low'}
                         style={{ flex: 1, maxWidth: '300px' }}
                         onChange={value => setPrecision(value)}
                         value={precision}
                     >
                         <Option value="high">高精度</Option>
-                        <Option value="medium">中等精度</Option>
+                        <Option value="medium">中精度</Option>
                         <Option value="low">低精度</Option>
                     </Select>
                 </div>
@@ -352,7 +357,7 @@ function AIDetection() {
                 </Button>
             </div>
 
-            {currentProject.detectionResult.output?.damageType && (
+            {currentProject.detectionResult.output?.damageType && !isDetecting &&(
                 <div className="card" style={{ marginTop: '24px' }}>
                     <h2 style={{ marginBottom: '16px' }}>识别结果</h2>
                     <Row gutter={[16, 16]}>
@@ -364,7 +369,7 @@ function AIDetection() {
                                 <p><strong>损伤面积：</strong>{currentProject.detectionResult.output.damageArea}</p>
                                 <p><strong>损伤位置：</strong>{currentProject.detectionResult.output.damageLocation}</p>
                                 <p><strong>损伤描述：</strong>{currentProject.detectionResult.output.damageDescription}</p>
-                                <p><strong>识别精度：</strong>{currentProject.detectionResult.input.precision === 'high' ? '高精度' : currentProject.detectionResult.input.precision === 'medium' ? '中等精度' : '低精度'}</p>
+                                <p><strong>识别精度：</strong>{currentProject.detectionResult.input.precision === 'high' ? '高精度' : currentProject.detectionResult.input.precision === 'medium' ? '中精度' : '低精度'}</p>
                             </div>
                         </Col>
                         <Col span={12}>

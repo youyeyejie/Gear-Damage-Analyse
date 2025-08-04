@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Select, Card, message, Table } from 'antd';
+import { Form, Input, Button, Select, Card, message, Table, Row, Col } from 'antd';
 import { PlayCircleOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useProjectContext } from '../AppContext';
 import '../App.css';
@@ -67,7 +67,7 @@ function GeometryModeling() {
                 },
                 body: JSON.stringify({
                     groupNumber: currentProject.selectedGearGroup.groupNumber,
-                    detectionResult: currentProject.detectionResult,
+                    input: currentProject.detectionResult,
                 })
             });
 
@@ -114,7 +114,7 @@ function GeometryModeling() {
                 sessionStorage.setItem('logs', JSON.stringify(updatedLogs));
                 message.success('几何建模完成');
             } else {
-                throw new Error(resData.message);
+                throw new Error(resData.msg);
             }
         } catch (error) {
             setIsModeling(false);
@@ -142,8 +142,8 @@ function GeometryModeling() {
 
     // 下载模型
     const handleDownloadModel = () => {
-        if (!currentProject.modelingResult.model.name) {
-            message.warning('请先完成几何建模');
+        if (!currentProject.modelingResult.model?.name) {
+            message.error('请先完成几何建模');
             return;
         }
         downloadFile(currentProject.modelingResult.model);
@@ -213,41 +213,51 @@ function GeometryModeling() {
                     下载几何模型 (.STEP)
                 </Button>
             </div>
-            {currentProject.modelingResult?.model.name && (
+
+            {currentProject.modelingResult?.model.name && !isModeling && (
                 <div className="card" style={{ marginTop: '24px' }}>
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                        <div style={{ flex: 1, padding: '16px', background: '#f0f2f5', borderRadius: '8px' }}>
-                            <h2 style={{ marginBottom: '16px' }}>建模结果</h2>
-                            <p><strong>配置组：</strong>第{currentProject.selectedGearGroup.groupNumber}组</p>
-                            <p><strong>主齿轮模型：</strong>{currentProject.selectedGearGroup.masterGear.model}</p>
-                            <p><strong>从齿轮模型：</strong>{currentProject.selectedGearGroup.slaveGear.model}</p>
-                            <p><strong>损伤类型：</strong>{currentProject.detectionResult.output?.damageType}</p>
-                        </div>
-                        <div style={{ flex: 1, padding: '16px', background: '#f0f2f5', borderRadius: '8px', textAlign: 'center' }}>
-                            <h3>模型预览</h3>
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '240px', background: '#e8e8e8', borderRadius: '8px', marginTop: '16px' }}>
-                                <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '16px', marginLeft: '16px' }}>
-                                    <p>齿轮3D模型预览图</p>
-                                    <p>暂不支持.STEP格式</p>
+                    <h2 style={{ marginBottom: '16px' }}>建模结果</h2>
+                    <Row gutter={[16, 16]}>
+                        <Col span={12}>
+                            <div className="card" style={{ height: '100%', padding: '16px' }}>
+                                <h3 style={{ marginBottom: '16px' }}>建模信息</h3>
+                                <p><strong>配置组：</strong>第{currentProject.selectedGearGroup.groupNumber}组</p>
+                                <p><strong>主齿轮模型：</strong>{currentProject.selectedGearGroup.masterGear.model}</p>
+                                <p><strong>从齿轮模型：</strong>{currentProject.selectedGearGroup.slaveGear.model}</p>
+                                <p><strong>损伤类型：</strong>{currentProject.detectionResult.output?.damageType}</p>
+                            </div>
+                        </Col>
+                        <Col span={12}>
+                            <div className="card" style={{ height: '100%', padding: '16px' }}>
+                                <h3 style={{ marginBottom: '16px' }}>模型预览</h3>
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '240px', background: '#e8e8e8', borderRadius: '8px', marginTop: '16px' }}>
+                                    <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '16px', marginLeft: '16px' }}>
+                                        <p>齿轮3D模型预览图</p>
+                                        <p>暂不支持.STEP格式</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </Col>
+                    </Row>
                 </div>
             )}
 
             {currentProject.selectedGearGroup?.groupNumber && (
                 <div className="card" style={{ marginTop: '24px' }}>
                     <h2 style={{ marginBottom: '16px' }}>齿轮参数详情</h2>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-                        <Card title="主齿轮参数" variant="outlined" style={{ flex: 1, minWidth: '300px', marginBottom: 0 }}>
-                            <Table columns={columns} dataSource={masterGearParams} rowKey="key" pagination={false} />
-                        </Card>
-                        <Card title="从齿轮参数" variant="outlined" style={{ flex: 1, minWidth: '300px' }}>
-                            <Table columns={columns} dataSource={slaveGearParams} rowKey="key" pagination={false} />
-                        </Card>
-                    </div>
+                    <Row gutter={[16, 16]}>
+                        <Col span={12}>
+                            <Card title="主齿轮参数" variant="outlined" style={{ flex: 1, minWidth: '300px', marginBottom: 0 }}>
+                                <Table columns={columns} dataSource={masterGearParams} rowKey="key" pagination={false} />
+                            </Card>
+                        </Col>
+                        <Col span={12}>
+                            <Card title="从齿轮参数" variant="outlined" style={{ flex: 1, minWidth: '300px' }}>
+                                <Table columns={columns} dataSource={slaveGearParams} rowKey="key" pagination={false} />
+                            </Card>
+                        </Col>
+                    </Row>
                 </div>
             )}
         </div>

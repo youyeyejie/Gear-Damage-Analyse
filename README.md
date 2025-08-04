@@ -24,6 +24,13 @@
     ├── package-lock.json
     ├── package.json
     ├── public\
+    │   ├── index.html
+    │   ├── favicon.ico
+    │   ├── logo192.png
+    │   ├── logo512.png
+    │   ├── manifest.json
+    │   ├── robots.txt
+    │   └── gear.json
     └── src\
         ├── App.css
         ├── App.js
