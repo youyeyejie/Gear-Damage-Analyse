@@ -436,7 +436,7 @@ function SimulationSettings() {
                 </Button>
             </div>
 
-            {currentProject.simulationResult && !isSimulating && (
+            {currentProject.simulationResult.cloudmap?.name && !isSimulating && (
                 <div className="card" style={{ marginTop: '24px' }}>
                     <h2 style={{ marginBottom: '16px' }}>仿真结果</h2>
                     <Row gutter={[16, 16]}>

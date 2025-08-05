@@ -43,7 +43,7 @@ function ProjectSettings() {
                 }
             }
             const resData = await response.json();
-            if (resData.code !== '0') {
+            if (resData.code !== '200') {
                 throw new Error(resData.msg);
             }
 

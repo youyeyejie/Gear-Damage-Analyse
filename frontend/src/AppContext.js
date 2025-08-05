@@ -105,6 +105,14 @@ const ProjectManager = {
             meshDensity: null,
             boundaryCondition: {},
         },
+        report: {
+            name: null,
+            size: null,
+        },
+        cloudmap: {
+            name: null,
+            size: null,
+        },
     }
 };
 
