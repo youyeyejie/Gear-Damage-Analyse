@@ -224,11 +224,11 @@ def simulation():
 
         # 根据是否有损选择不同的云图数据源
         if is_damage:
-            stress_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/damaged/group{gear_group_number}stress.png')
-            remain_life_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/damaged/group{gear_group_number}life.png')
+            stress_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/damaged/stress/{gear_group_number}.png')
+            remain_life_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/damaged/life/{gear_group_number}.png')
         else:
-            stress_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/undamaged/group{gear_group_number}stress.png')
-            remain_life_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/undamaged/group{gear_group_number}life.png')
+            stress_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/undamaged/stress/{gear_group_number}.png')
+            remain_life_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/undamaged/life/{gear_group_number}.png')
 
         # 结果
         result = {}

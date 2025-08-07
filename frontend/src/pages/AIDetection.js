@@ -244,13 +244,12 @@ function AIDetection() {
     const renderHeatmap = () => {
         if (!currentProject.detectionResult.heatmap?.length) {
             return (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', background: '#e8e8e8', borderRadius: '8px', marginTop: '16px' }}>
+                <div className="empty-state">
                     <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
                     <p style={{ marginLeft: '16px' }}>暂无损伤热力图预览</p>
                 </div>
             );
         }
-
 
         const heatmapImages = currentProject.detectionResult.heatmap.map((heatmap, index) => {
             const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${heatmap.name}`;

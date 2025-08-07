@@ -48,15 +48,9 @@ function DataVisualization() {
         { title: '值', dataIndex: 'value', key: 'value' }
     ];
 
-    const boundaryOptions = [
-        { id: 'fixed', name: '固定边' },
-        { id: 'loaded', name: '加载面' },
-        { id: 'symmetry', name: '对称面' },
-        { id: 'free', name: '自由边界' },
-    ];
-        // 展示热力图
+    // 展示热力图
     const renderHeatmap = () => {
-        if (!currentProject.detectionResult.heatmap?.name) {
+        if (!currentProject.detectionResult.heatmap?.length) {
             return (
                 <div className="empty-state">
                     <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
@@ -65,44 +59,51 @@ function DataVisualization() {
             );
         }
 
-        // 构建图片URL
-        const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${currentProject.detectionResult.heatmap.name}`;
-
+        const heatmapImages = currentProject.detectionResult.heatmap.map((heatmap, index) => {
+            const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${heatmap.name}`;
+            return (
+                <Col span={12}>
+                    <div key={index} style={{ width: '100%', textAlign: 'center', marginBottom: '16px' }}>
+                        <Image
+                            src={imageUrl}
+                            alt={`热力图 ${index + 1}`}
+                            style={{ maxWidth: '100%', maxHeight: '300px' }}
+                        />
+                    </div>
+                </Col>
+            );
+        });
         return (
-            <div style={{ width: '100%', textAlign: 'center' }}>
-                <Image
-                    src={imageUrl}
-                    alt="热力图"
-                    style={{ maxWidth: '100%', maxHeight: '300px' }}
-                />
-            </div>
+            <Row gutter={[16, 16]}>
+                {heatmapImages}
+            </Row>
         );
     };
 
-    
-    const renderCloudmap = () => {
-        if (!currentProject.simulationResult.cloudmap?.name) {
+    const renderCloudmap = (cloudmapName) => {
+        if (!currentProject.simulationResult[cloudmapName]?.name) {
             return (
                 <div className="empty-state">
                     <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-                    <p style={{ marginLeft: '16px' }}>暂无应力分布云图预览</p>
+                    <p style={{ marginLeft: '16px' }}>暂无{cloudmapName === "stress_cloudmap" ? '仿真应力云图' : '仿真剩余寿命云图'}预览</p>
                 </div>
             );
         }
         
         // 构建图片URL
-        const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${currentProject.simulationResult.cloudmap.name}`;
+        const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${currentProject.simulationResult[cloudmapName].name}`;
 
         return (
             <div style={{ width: '100%', textAlign: 'center' }}>
                 <Image
                     src={imageUrl}
-                    alt="应力云图"
-                    style={{ maxWidth: '100%', maxHeight: '300px' }}
+                    alt={cloudmapName}
+                    style={{ maxWidth: '100%', maxHeight: '450px' }}
                 />
             </div>
         );
     }
+
 
     return (
         <div className="fade-in data-visualization">
@@ -202,7 +203,7 @@ function DataVisualization() {
                                             下载文件
                                         </Button>
                                     </span>
-                                    <span className="list-col2">{file.name}</span>
+                                    <span className="list-col2">{file.type}：{file.name}</span>
                                 </div>
                             ))
                         ) : (
@@ -215,29 +216,22 @@ function DataVisualization() {
             {/* 智能识别面板 */}
             {activeTabKey === 'ai' && (
                 <div className="card">
-                    {currentProject.detectionResult?.output.damageType ? ( 
+                    {currentProject.detectionResult?.heatmap?.length > 0 ? ( 
                         <>
                             <h2 style={{ marginBottom: '16px' }}>识别结果</h2>
                             <Row gutter={[16, 16]}>
                                 <Col span={12}>
-                                    <p><strong>损伤类型：</strong>{currentProject.detectionResult?.output?.damageType || 'N/A'}</p>
-                                    <p><strong>损伤程度：</strong>{currentProject.detectionResult?.output?.damageSeverity || 'N/A'}</p>
-                                    <p><strong>损伤位置：</strong>{currentProject.detectionResult?.output?.damageLocation || 'N/A'}</p>
+                                    <p><strong>损伤情况：</strong>{currentProject.detectionResult?.output?.isDamage ? '有损' : '无损' || 'N/A'}</p>
                                 </Col>
                                 <Col span={12}>
                                     <p><strong>损伤面积：</strong>{currentProject.detectionResult?.output?.damageArea || 'N/A'}</p>
-                                    <p><strong>识别精度：</strong>
-                                        {currentProject.detectionResult?.input?.precision === 'high' ? '高精度' : 
-                                        currentProject.detectionResult?.input?.precision === 'medium' ? '中精度' : 
-                                        currentProject.detectionResult?.input?.precision === 'low' ? '低精度' : 'N/A'}
-                                    </p>
                                 </Col>
                             </Row>
 
                             <Divider style={{ margin: '16px 0' }} />
 
                             <h2 style={{ marginBottom: '16px' }}>热力图分析</h2>
-                            <div className="preview-container">
+                            <div className="card" style={{ height: '100%', padding: '16px' }}>
                                 {renderHeatmap()}
                             </div>
                         </>
@@ -260,8 +254,8 @@ function DataVisualization() {
                             <h2 style={{ marginBottom: '16px' }}>建模参数</h2>
                             <Row gutter={[16, 16]}>
                                 <Col span={12}>
-                                    <p><strong>配置组：</strong>第{currentProject?.selectedGearGroup?.groupNumber || 'N/A'}组</p>
-                                    <p><strong>损伤类型：</strong>{currentProject?.detectionResult?.output?.damageType || 'N/A'}</p>
+                                    <p><strong>配置组：</strong>{currentProject?.selectedGearGroup?.groupNumber ? `第${currentProject?.selectedGearGroup?.groupNumber}组` : 'N/A'}</p>
+                                    <p><strong>损伤情况：</strong>{currentProject?.detectionResult?.output?.isDamage ? '有损' : '无损' || 'N/A'}</p>
                                 </Col>
                                 <Col span={12}>
                                     <p><strong>主齿轮模型：</strong>{currentProject?.selectedGearGroup?.masterGear?.model || 'N/A'}</p>
@@ -286,12 +280,10 @@ function DataVisualization() {
                             <Divider style={{ margin: '16px 0' }} />
 
                             <h2 style={{ marginBottom: '16px' }}>模型预览</h2>
-                            <div className="preview-container">
-                                <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '16px', marginLeft: '16px' }}>
-                                    <p>齿轮3D模型预览图</p>
-                                    <p>暂不支持.STEP格式</p>
-                                </div>
+                            <div className="empty-state">
+                                <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff', marginBottom: '16px' }} />
+                                <p style={{ fontSize: '18px', color: '#666' }}>齿轮3D模型预览图</p>
+                                <p style={{ marginTop: '8px', color: '#999' }}>暂不支持.STEP格式</p>
                             </div>
                         </>
                     ) : (
@@ -307,31 +299,20 @@ function DataVisualization() {
             {/* 仿真结果面板 */}
             {activeTabKey === 'simulation' && (
                 <div className="card">
-                    {currentProject?.selectedGearGroup?.groupNumber && currentProject?.simulationResult?.input ? (
+                    {currentProject?.selectedGearGroup?.groupNumber && 
+                        currentProject?.simulationResult?.stress_cloudmap?.name &&
+                        currentProject?.simulationResult?.remain_life_cloudmap?.name ? (
                         <>
                             <h2 style={{ marginBottom: '16px' }}>仿真参数</h2>
                             <Row gutter={[16, 16]}>
                                 <Col span={12}>
-                                    <p><strong>配置组：</strong>第{currentProject?.selectedGearGroup?.groupNumber || 'N/A'}组</p>
-                                    <p><strong>损伤类型：</strong>{currentProject?.detectionResult?.output?.damageType || 'N/A'}</p>
+                                    <p><strong>配置组：</strong>{currentProject?.selectedGearGroup?.groupNumber ? `第${currentProject?.selectedGearGroup?.groupNumber}组` : 'N/A'}</p>
+                                    <p><strong>损伤情况：</strong>{currentProject?.detectionResult?.output?.isDamage ? '有损' : '无损' || 'N/A'}</p>
                                     <p><strong>几何模型：</strong>{currentProject?.modelingResult?.model?.name || 'N/A'}</p>
                                 </Col>
                                 <Col span={12}>
-                                    <p><strong>网格密度：</strong>
-                                        {currentProject.simulationResult.input.meshDensity === 'high' ? '高密度' : 
-                                        currentProject.simulationResult.input.meshDensity === 'medium' ? '中密度' : 
-                                        currentProject.simulationResult.input.meshDensity === 'low' ? '低密度' : 'N/A'}
-                                    </p>
-                                    <p><strong>边界条件：</strong>{currentProject.simulationResult.input.boundaryCondition 
-                                        ? (() => {
-                                            const selectedOptions = Object.entries(currentProject.simulationResult.input.boundaryCondition)
-                                                .filter(([_, checked]) => checked)
-                                                .map(([id]) => boundaryOptions.find(option => option.id === id)?.name)
-                                                .filter(Boolean);
-                                            return selectedOptions.length > 0 ? selectedOptions.join(', ') : 'N/A';
-                                        })()
-                                        : 'N/A'}
-                                    </p>
+                                    <p><strong>主齿轮模型：</strong>{currentProject?.selectedGearGroup?.masterGear?.model || 'N/A'}</p>
+                                    <p><strong>从齿轮模型：</strong>{currentProject?.selectedGearGroup?.slaveGear?.model || 'N/A'}</p>
                                 </Col>
                             </Row>
 
@@ -355,10 +336,21 @@ function DataVisualization() {
 
                             <Divider style={{ margin: '16px 0' }} />
 
-                            <h2 style={{ marginBottom: '16px' }}>应力云图</h2>
-                            <div className="preview-container">
-                                {renderCloudmap()}
-                            </div>
+                            <h2 style={{ marginBottom: '16px' }}>仿真云图</h2>
+                            <Row gutter={[16, 16]}>
+                                <Col span={12}>
+                                    <div className="card" style={{ height: '100%', padding: '16px' }}>
+                                        <h3 style={{ marginBottom: '16px' }}>应力云图</h3>
+                                        {renderCloudmap('stress_cloudmap')}
+                                    </div>
+                                </Col>
+                                <Col span={12}>
+                                    <div className="card" style={{ height: '100%', padding: '16px' }}>
+                                        <h3 style={{ marginBottom: '16px' }}>剩余寿命云图</h3>
+                                        {renderCloudmap('remain_life_cloudmap')}
+                                    </div>
+                                </Col>
+                            </Row>
                         </>
                     ) : (
                         <div className="empty-state">

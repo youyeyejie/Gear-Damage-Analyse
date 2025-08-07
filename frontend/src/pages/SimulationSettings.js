@@ -109,13 +109,13 @@ function SimulationSettings() {
                     id: id + 1,
                     type: '仿真',
                     operation: '新增可下载文件',
-                    description: `新增仿真应力云图${stress_cloudmap.name}，大小${stress_cloudmap.size}`,
+                    description: `新增仿真应力云图：${stress_cloudmap.name}，大小${stress_cloudmap.size}`,
                     time: new Date().toLocaleString(),
                 }, {
                     id: id + 2,
                     type: '仿真',
                     operation: '新增可下载文件',
-                    description: `新增剩余寿命云图${remain_life_cloudmap.name}，大小${remain_life_cloudmap.size}`,
+                    description: `新增剩余寿命云图：${remain_life_cloudmap.name}，大小${remain_life_cloudmap.size}`,
                     time: new Date().toLocaleString(),
                 }, ...logs];
                 setLogs(updatedLogs);
@@ -167,7 +167,7 @@ function SimulationSettings() {
     const renderCloudmap = (cloudmapName) => {
         if (!currentProject.simulationResult[cloudmapName]?.name) {
             return (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', background: '#e8e8e8', borderRadius: '8px', marginTop: '16px' }}>
+                <div className="empty-state">
                     <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
                     <p style={{ marginLeft: '16px' }}>暂无{cloudmapName === "stress_cloudmap" ? '仿真应力云图' : '仿真剩余寿命云图'}预览</p>
                 </div>
@@ -182,7 +182,7 @@ function SimulationSettings() {
                 <Image
                     src={imageUrl}
                     alt={cloudmapName}
-                    style={{ maxWidth: '100%', maxHeight: '300px' }}
+                    style={{ maxWidth: '100%', maxHeight: '450px' }}
                 />
             </div>
         );
