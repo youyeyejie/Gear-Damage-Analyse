@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Select, Card, message, Table, Row, Col } from 'antd';
+import { Form, Button, Select, Card, message, Table, Row, Col } from 'antd';
 import { PlayCircleOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useProjectContext } from '../AppContext';
 import '../App.css';
@@ -27,6 +27,9 @@ function GeometryModeling() {
     const handleGroupChange = (groupId) => {
         if (!currentProject.projectInfo.id) {
             message.warn('请先创建项目');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 500);
             return;
         }
         const updatedCurrentProject = {
@@ -39,11 +42,14 @@ function GeometryModeling() {
 
     const handleStartModeling = async () => {
         if (!currentProject.selectedGearGroup.groupNumber) {
-            message.error('请先选择齿轮配置组');
+            message.warning('请先选择齿轮配置组');
             return;
         }
-        if (!currentProject.detectionResult.output?.damageType) {
-            message.error('请先进行损伤识别');
+        if (!currentProject.detectionResult.heatmap?.length) {
+            message.warning('请先进行损伤识别');
+            setTimeout(() => {
+                window.location.href = '/ai-detection';
+            }, 500);
             return;
         }
 
@@ -66,8 +72,10 @@ function GeometryModeling() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    groupNumber: currentProject.selectedGearGroup.groupNumber,
-                    input: currentProject.detectionResult,
+                    input: {
+                        gearGroupNumber: currentProject.selectedGearGroup.groupNumber,
+                        isDamage: currentProject.detectionResult.output.isDamage,
+                    },
                 })
             });
 
@@ -75,7 +83,7 @@ function GeometryModeling() {
             setIsModeling(false);
 
             if (resData.code === '200') {
-                 // 添加模型到下载列表
+                // 添加模型到下载列表
                 const modelFile = {
                     id: Date.now(),
                     name: resData.data.model.name,
@@ -186,9 +194,17 @@ function GeometryModeling() {
                             ))}
                         </Select>
                     </Form.Item>
-
-                    <Form.Item label="损伤类型">
-                        <Input value={currentProject.detectionResult.output?.damageType} placeholder="请先进行识别" readOnly />
+                    <Form.Item 
+                        name="isDamage"
+                        label="损伤情况" 
+                        rules={[{ required: true, message: '请在“损伤识别”页面完成智能识别' }]} 
+                        initialValue={currentProject.detectionResult.output?.isDamage}
+                        disabled={true}
+                    >
+                        <Select placeholder="请在“损伤识别”页面完成智能识别" disabled>
+                            <Option value={true}>有损</Option>
+                            <Option value={false}>无损</Option>
+                        </Select>
                     </Form.Item>
                 </Form>
             </div>
@@ -224,7 +240,7 @@ function GeometryModeling() {
                                 <p><strong>配置组：</strong>第{currentProject.selectedGearGroup.groupNumber}组</p>
                                 <p><strong>主齿轮模型：</strong>{currentProject.selectedGearGroup.masterGear.model}</p>
                                 <p><strong>从齿轮模型：</strong>{currentProject.selectedGearGroup.slaveGear.model}</p>
-                                <p><strong>损伤类型：</strong>{currentProject.detectionResult.output?.damageType}</p>
+                                <p><strong>损伤情况：</strong>{currentProject.detectionResult.output?.isDamage ? '有损' : '无损'}</p>
                             </div>
                         </Col>
                         <Col span={12}>

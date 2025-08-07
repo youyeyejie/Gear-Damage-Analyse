@@ -26,7 +26,7 @@ function AppContent() {
             <Router>
             <Layout style={{ minHeight: '100vh' }}>
                 <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
-                    <div className="logo" style={{ color: 'white', textAlign: 'center', padding: '16px', fontSize: '18px', fontWeight: 'bold' }}>
+                    <div className="logo" style={{ minHeight: '64px', color: 'white', textAlign: 'center', padding: '18px', fontSize: '18px', fontWeight: 'bold' }}>
                         齿轮损伤识别系统
                     </div>
                     <Menu
@@ -49,7 +49,7 @@ function AppContent() {
                                 label: <Link to="/ai-detection" onClick={() => {
                                     setSelectedMenu('aiDetection');
                                     sessionStorage.setItem('selectedMenu', 'aiDetection');
-                                }}>智能识别</Link>,
+                                }}>损伤识别</Link>,
                             },
                             {
                                 key: 'geometryModeling',

@@ -121,63 +121,43 @@ def ai_detection():
     global full_path
     try:
         data = request.get_json()
-        if not data or 'input' not in data or 'images' not in data:
+        if not data or 'input' not in data:
             return jsonify({"code": "400", "msg": "无效的请求数据，缺少必要参数", "data": {}}), 400
         # 确保项目路径已设置
         if not full_path:
             return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
   
         input = data['input']
-        precision = input['precision']
-        images = data['images']
-        file_paths = []
-        for file in images:
+        image = input['image']
+        file_paths = [] # 输入的图片的路径列表
+        for file in image:
             file_path = os.path.join(full_path, file)
             file_paths.append(file_path)
 
-        # 根据精度调整处理时间
-        if precision == 'high':
-            time.sleep(3)  # 高精度需要更长处理时间
-        elif precision == 'medium':
-            time.sleep(2)  # 中等精度
-        else:
-            time.sleep(1)  # 低精度
+        # 调用
+        time.sleep(1)
+        # 调用在这里实现
 
         # 生成模拟结果
-        damage_types = ['齿面磨损', '齿根裂纹', '齿面胶合', '齿测点蚀']
+        is_damage = random.choice([True, False]) # 输出的是否损伤
+
         result = {}
-        result['input'] = data['input']
+        result['input'] = input
 
         output = {
-            "damageType": random.choice(damage_types),
-            "damageSeverity": f"{random.randint(10, 90)}%",
-            "damageArea": f"{random.randint(10, 90)}%",
-            "damageLocation": f"{random.randint(10, 90)}%",
-            "damageDescription": "这是一个模拟的损伤识别结果",
+            "isDamage": is_damage,
         }
         result['output'] = output
 
-        # 模拟热力图：提取第一张图片的文件名作为热力图
-        heatmap_filename = os.path.basename(file_paths[0])
-        result['heatmap'] = {
-            'name': heatmap_filename,
-            'size': "{:.2f}KB".format(os.path.getsize(file_paths[0]) / 1024),
-        }
+        # 模拟热力图
+        heatmap = []
+        for file_path in file_paths:
+            heatmap.append({
+                'name': os.path.basename(file_path),
+                'size': "{:.2f}KB".format(os.path.getsize(file_path) / 1024),
+            })
 
-        # 创建一个模拟的报告文件
-        report_name = f"AI预测报告_{time.strftime('%Y%m%d%H%M%S')}.txt"
-        report_path = os.path.join(full_path, report_name)
-        with open(report_path, 'w') as f:
-            f.write("这是一个模拟的AI预测报告\n")
-            f.write("损伤类型："+output['damageType']+"\n")
-            f.write("损伤严重程度："+output['damageSeverity']+"\n")
-            f.write("损伤面积："+output['damageArea']+"\n")
-            f.write("损伤位置："+output['damageLocation']+"\n")
-            f.write("损伤描述："+output['damageDescription']+"\n")
-        result['report'] = {
-            'name': report_name,
-            'size': "{:.2f}KB".format(os.path.getsize(report_path) / 1024),
-        }
+        result['heatmap'] = heatmap
 
         return jsonify({
             "code": "200",
@@ -192,14 +172,15 @@ def geometry_modeling():
     global full_path
     try:
         data = request.get_json()
-        if not data or 'groupNumber' not in data or 'input' not in data:
+        if not data or 'input' not in data:
             return jsonify({"code": "400", "msg": "无效的建模数据，缺少必要参数", "data": {}}), 400
         # 确保项目路径已设置
         if not full_path:
             return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
 
-        group_number = data['groupNumber']
         input = data['input']
+        gear_group_number = input['gearGroupNumber']
+        is_damage = input['isDamage']
 
         # 模拟建模
         time.sleep(2)
@@ -210,6 +191,7 @@ def geometry_modeling():
         shutil.copy2(source_path, destination_path)
 
         result = {}
+        result['input'] = input
         result['model'] = {
             'name': filename,
             'size': "{:.2f}KB".format(os.path.getsize(destination_path) / 1024),
@@ -228,46 +210,49 @@ def simulation():
     global full_path
     try:
         data = request.get_json()
-        if not data or 'groupNumber' not in data or 'input' not in data:
+        if not data or 'input' not in data:
             return jsonify({"code": "400", "msg": "无效的仿真数据，缺少必要参数", "data": {}}), 400
         # 确保项目路径已设置
         if not full_path:
             return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
 
-        group_number = data['groupNumber']
         input = data['input']
-        model_name = data['model']
-        model_path = os.path.join(full_path, model_name)
+        gear_group_number = input['gearGroupNumber']
+        is_damage = input['isDamage']
+        # model_name = input['model']['name']
+        # model_path = os.path.join(full_path, model_name)
 
-        # 模拟模拟
-        time.sleep(2)
-        # 生成模拟结果
+        # 根据是否有损选择不同的云图数据源
+        if is_damage:
+            stress_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/damaged/group{gear_group_number}stress.png')
+            remain_life_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/damaged/group{gear_group_number}life.png')
+        else:
+            stress_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/undamaged/group{gear_group_number}stress.png')
+            remain_life_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/undamaged/group{gear_group_number}life.png')
 
+        # 结果
         result = {}
         result['input'] = input
-        output = {
-            'simulationDescription': '这是一个模拟的仿真结果',
-        }
-        result['output'] = output
 
-        # 模拟云图
-        cloudmap_filename = os.path.basename(model_path)
-        cloudmap_path = os.path.join(full_path, cloudmap_filename)
-        result['cloudmap'] = {
-            'name': cloudmap_filename,
-            'size': "{:.2f}KB".format(os.path.getsize(cloudmap_path) / 1024),
+        # 模拟应力云图
+        stress_cloudmap_filename = f"stress_cloudmap_{time.strftime('%Y%m%d%H%M%S')}.png"
+        stress_cloudmap_destination_path = os.path.join(full_path, stress_cloudmap_filename)
+        shutil.copy2(stress_cloudmap_source_path, stress_cloudmap_destination_path)
+        result['stress_cloudmap'] = {
+            'name': stress_cloudmap_filename,
+            'size': "{:.2f}KB".format(os.path.getsize(stress_cloudmap_destination_path) / 1024),
         }
 
-        # 创建一个模拟的报告文件
-        report_name = f"仿真报告_{time.strftime('%Y%m%d%H%M%S')}.txt"
-        report_path = os.path.join(full_path, report_name)
-        with open(report_path, 'w') as f:
-            f.write("这是一个模拟的仿真报告\n")
-            f.write("仿真描述："+output['simulationDescription']+"\n")
-        result['report'] = {
-            'name': report_name,
-            'size': "{:.2f}KB".format(os.path.getsize(report_path) / 1024),
+        # 模拟剩余寿命云图
+        remain_life_cloudmap_filename = f"remain_life_cloudmap_{time.strftime('%Y%m%d%H%M%S')}.png"
+        remain_life_cloudmap_destination_path = os.path.join(full_path, remain_life_cloudmap_filename)
+        shutil.copy2(remain_life_cloudmap_source_path, remain_life_cloudmap_destination_path)
+        result['remain_life_cloudmap'] = {
+            'name': remain_life_cloudmap_filename,
+            'size': "{:.2f}KB".format(os.path.getsize(remain_life_cloudmap_destination_path) / 1024),
         }
+
+
 
         return jsonify({
             "code": "200",

@@ -13,29 +13,15 @@ const ProjectManager = {
         createTime: null,
     },
     downloadFileList: [],
-    uploadFileList: {
-        aiDetectionImage: [],
-        geometryModel: [],
-    },
+    uploadFileList: [],
     detectionResult: {
         input: {
-            precision: null,
+            image: [],
         },
         output: {
-            damageType: null,
-            damageSeverity: null,
-            damageLocation: null,
-            damageArea: null,
-            damageDescription: null,
+            isDamage: null,
         },
-        report: {
-            name: null,
-            size: null,
-        },
-        heatmap: {
-            name: null,
-            size: null,
-        },
+        heatmap: [],
     },
     selectedGearGroup: {
         groupNumber: null,
@@ -95,6 +81,10 @@ const ProjectManager = {
         }
     },
     modelingResult: {
+        input: {
+            gearGroupNumber: null,
+            isDamage: null,
+        },
         model: {
             name: null,
             size: null,
@@ -102,18 +92,21 @@ const ProjectManager = {
     },
     simulationResult: {
         input: {
-            meshDensity: null,
-            boundaryCondition: {},
+            gearGroupNumber: null,
+            isDamage: null,
+            model: {
+                name: null,
+            },
         },
-        report: {
+        stress_cloudmap: {
             name: null,
             size: null,
         },
-        cloudmap: {
+        remain_life_cloudmap: {
             name: null,
             size: null,
         },
-    }
+    },
 };
 
 const Logs = [];
