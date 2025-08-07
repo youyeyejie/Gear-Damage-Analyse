@@ -4,6 +4,8 @@ import os
 import time
 import random
 import shutil
+import zipfile
+import json
 
 app = Flask(__name__)
 CORS(app)  # 解决跨域问题
@@ -224,17 +226,24 @@ def simulation():
         # model_name = input['model']['name']
         # model_path = os.path.join(full_path, model_name)
 
+        remain_life_json = json.load(open('../data/remain_life.json', 'r'))['remain_life']
+
         # 根据是否有损选择不同的云图数据源
         if is_damage:
             stress_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/damaged/stress/{gear_group_number}.png')
             remain_life_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/damaged/life/{gear_group_number}.png')
+            remain_life = f'{remain_life_json["damaged"][str(gear_group_number)]}转'
         else:
             stress_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/undamaged/stress/{gear_group_number}.png')
             remain_life_cloudmap_source_path = os.path.join(os.path.dirname(__file__), f'../data/cloudmap/undamaged/life/{gear_group_number}.png')
+            remain_life = f'{remain_life_json["undamaged"][str(gear_group_number)]}转'
 
         # 结果
         result = {}
         result['input'] = input
+        result['output'] = {
+            'remainLife': remain_life,
+        }
 
         # 模拟应力云图
         stress_cloudmap_filename = f"stress_cloudmap_{time.strftime('%Y%m%d%H%M%S')}.png"
@@ -254,8 +263,6 @@ def simulation():
             'size': "{:.2f}KB".format(os.path.getsize(remain_life_cloudmap_destination_path) / 1024),
         }
 
-
-
         return jsonify({
             "code": "200",
             "msg": "仿真成功",
@@ -263,6 +270,135 @@ def simulation():
         }), 200
     except Exception as e:
         return jsonify({"code": "500", "msg": f"仿真失败: {str(e)}", "data": {}}), 500
+
+
+@app.route('/api/generateReport', methods=['POST'])
+def generate_report():
+    global full_path
+    try:
+        data = request.get_json()
+        if not data or 'project' not in data:
+            return jsonify({"code": "400", "msg": "无效的项目数据，缺少必要参数", "data": {}}), 400
+        # 确保项目路径已设置
+        if not full_path:
+            return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
+        
+        # 提取报告数据
+        project = data['project']
+        projectInfo = project['projectInfo']
+        
+        detectionResult = project['detectionResult']
+        ai_detection_input_image = ""
+        for image in detectionResult['input']['image']:
+            ai_detection_input_image += f"\t - ![{image}]({image})\n"
+        ai_detection_result = "有损" if detectionResult['output']['isDamage'] else "无损"
+
+        ai_detection_heatmap = ""
+        for heatmap in detectionResult['heatmap']:
+            ai_detection_heatmap += f"\t - ![{heatmap['name']}]({heatmap['name']})\n"
+        
+        selectedGearGroup = project['selectedGearGroup']
+        parameter = "\t|齿轮参数|主齿轮|从齿轮|\n\t|:-|:-|:-|\n"
+        # 处理主齿轮参数
+        for key, value in selectedGearGroup['masterGear']['parameters'].items():
+            parameter += f"\t|{key}|{value}|"
+            # 处理从齿轮对应参数
+            if key in selectedGearGroup['slaveGear']['parameters']:
+                parameter += f"{selectedGearGroup['slaveGear']['parameters'][key]}|\n"
+            else:
+                parameter += "|\n"
+        material = "\t|材料属性|主齿轮|从齿轮|\n\t|:-|:-|:-|\n"
+        for key, value in selectedGearGroup['masterGear']['materialProperties'].items():
+            material += f"\t|{key}|{value}|"
+            if key in selectedGearGroup['slaveGear']['materialProperties']:
+                material += f"{selectedGearGroup['slaveGear']['materialProperties'][key]}|\n"
+            else:
+                material += "|\n"
+        load = "\t|载荷数据|主齿轮|从齿轮|\n\t|:-|:-|:-|\n"
+        for key, value in selectedGearGroup['masterGear']['loadData'].items():
+            load += f"\t|{key}|{value}|"
+            if key in selectedGearGroup['slaveGear']['loadData']:
+                load += f"{selectedGearGroup['slaveGear']['loadData'][key]}|\n"
+            else:
+                load += "|\n"
+        
+        modelingResult = project['modelingResult']
+        simulationResult = project['simulationResult']
+        
+        # 删除full_path下的压缩文件
+        for file in os.listdir(full_path):
+            if file.endswith('.zip') or file.endswith('.md'):
+                os.remove(os.path.join(full_path, file))
+        
+
+        # 生成报告
+        report_filename = "齿轮损伤识别与剩余寿命预测报告.md"
+        report_path = os.path.join(full_path, report_filename)
+        report_content = f"""
+# 齿轮损伤识别与剩余寿命预测报告
+## 项目基本信息
+- **项目名称：** {projectInfo['name']}
+- **项目路径：** {projectInfo['path']}
+- **项目状态：** {projectInfo['status']}
+- **项目编号：** {projectInfo['id']}
+- **项目创建时间：** {projectInfo['createTime']}
+
+## 智能识别
+- **输入图片：**
+{ai_detection_input_image}
+- **识别结果：** {ai_detection_result}
+- **热力图：**
+{ai_detection_heatmap}
+
+## 几何建模
+- **齿轮配置：** 第{selectedGearGroup['groupNumber']}组
+    - 主齿轮：{selectedGearGroup['masterGear']['model']}
+    - 从齿轮：{selectedGearGroup['slaveGear']['model']}
+- **齿轮参数：**
+{parameter}
+- **几何模型：** [模型链接]({modelingResult['model']['name']})
+
+## 仿真计算
+- **材料属性：**
+{material}
+- **载荷数据：**
+{load}
+- **仿真结果：**
+    - **压力云图：** ![stress_cloudmap]({simulationResult['stress_cloudmap']['name']})
+    - **剩余寿命云图：** 
+        - 剩余寿命：{simulationResult['output']['remainLife']}
+        - ![remain_life_cloudmap]({simulationResult['remain_life_cloudmap']['name']})
+"""
+
+
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+
+        # 生成压缩包文件名
+        zip_filename = "齿轮损伤识别与剩余寿命预测报告.zip"
+        zip_path = os.path.join(full_path, zip_filename)
+        # 创建压缩文件
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(full_path):
+                for file in files:
+                    if file != zip_filename:  # 避免将压缩包自身添加到压缩包中
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, full_path)
+                        zipf.write(file_path, arcname)
+
+        result = {}
+        result['project'] = {
+            'name': zip_filename,
+            'size': "{:.2f}KB".format(os.path.getsize(zip_path) / 1024),
+        }
+
+        return jsonify({
+            "code": "200",
+            "msg": "生成报告成功",
+            "data": result
+        }), 200
+    except Exception as e:
+        return jsonify({"code": "500", "msg": f"生成报告失败: {str(e)}", "data": {}}), 500
 
 
 if __name__ == '__main__':
