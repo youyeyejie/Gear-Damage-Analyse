@@ -71,7 +71,7 @@ function SimulationSettings() {
             setIsSimulating(false);
             
             if (resData.code === '200') {
-                const id =Date.now();
+                const id = Date.now();
 
                 const stress_cloudmap = {
                     id: id,
@@ -308,6 +308,7 @@ function SimulationSettings() {
                         <Col span={12}>
                             <div className="card" style={{ height: '100%', padding: '16px' }}>
                                 <h3 style={{ marginBottom: '16px' }}>剩余寿命云图</h3>
+                                    <p><strong>剩余寿命预测：</strong>{currentProject?.simulationResult?.output?.remainLife || 'N/A'}</p>
                                 {renderCloudmap('remain_life_cloudmap')}
                             </div>
                         </Col>

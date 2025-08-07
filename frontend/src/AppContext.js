@@ -98,6 +98,9 @@ const ProjectManager = {
                 name: null,
             },
         },
+        output: {
+            remainLife: null,
+        },
         stress_cloudmap: {
             name: null,
             size: null,

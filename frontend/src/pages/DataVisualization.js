@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Tabs, Row, Col, Divider, Table, Image } from 'antd';
-import { FileTextOutlined, AlertOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Card, Tabs, Row, Col, Divider, Table, Image, Button, message } from 'antd';
+import { FileTextOutlined, AlertOutlined, DownloadOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { useProjectContext } from '../AppContext';
 import '../App.css';
 
@@ -104,6 +104,32 @@ function DataVisualization() {
         );
     }
 
+    // 生成报告函数
+    const generateReport = async () => {
+        try {
+            // 发送请求到后端生成报告
+            const response = await fetch('http://localhost:5000/api/generateReport', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project: currentProject,
+                }),
+            });
+            
+            const resData = await response.json();
+            
+            if (resData.code === '200') {
+                downloadFile(resData.data.project);
+            } else {
+                throw new Error(resData.msg);
+            }
+        } catch (error) {
+            message.error(error.message);
+        }
+    };
+
 
     return (
         <div className="fade-in data-visualization">
@@ -137,6 +163,18 @@ function DataVisualization() {
                     </div>
                 </div>
             </Card>
+
+            {/* 生成报告按钮 */}
+            {currentProject.projectInfo?.status === '仿真完成' && (
+                <Button
+                    type="primary"
+                    icon={<FilePdfOutlined />}
+                    onClick={generateReport}
+                    style={{ marginBottom: '24px', float: 'right' }}
+                >
+                    生成项目报告
+                </Button>
+            )}
 
             <Tabs
                 activeKey={activeTabKey}
@@ -308,6 +346,7 @@ function DataVisualization() {
                                 <Col span={12}>
                                     <p><strong>主齿轮模型：</strong>{currentProject?.selectedGearGroup?.masterGear?.model || 'N/A'}</p>
                                     <p><strong>从齿轮模型：</strong>{currentProject?.selectedGearGroup?.slaveGear?.model || 'N/A'}</p>
+                                    <p><strong>剩余寿命预测：</strong>{currentProject?.simulationResult?.output?.remainLife || 'N/A'}</p>
                                 </Col>
                             </Row>
 
