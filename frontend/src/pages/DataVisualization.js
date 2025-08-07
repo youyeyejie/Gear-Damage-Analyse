@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Tabs, Row, Col, Divider, Button, Table, Image } from 'antd';
+import { Card, Tabs, Row, Col, Divider, Table, Image } from 'antd';
 import { FileTextOutlined, AlertOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useProjectContext } from '../AppContext';
 import '../App.css';
@@ -146,7 +146,7 @@ function DataVisualization() {
                     { key: 'project', label: '项目信息' },
                     { key: 'ai', label: '智能识别' },
                     { key: 'modeling', label: '几何建模' },
-                    { key: 'simulation', label: '仿真结果' },
+                    { key: 'simulation', label: '仿真计算' },
                 ]}
             />
 
@@ -194,16 +194,12 @@ function DataVisualization() {
                             currentProject.downloadFileList.map((file, index) => (
                                 <div key={index} className="list-item">
                                     <span className="list-col1">
-                                        <Button
-                                            type="primary"
-                                            icon={<DownloadOutlined />}
-                                            onClick={() => downloadFile(file)}
-                                            size="small"
-                                        >
-                                            下载文件
-                                        </Button>
+                                        {file.type}
                                     </span>
-                                    <span className="list-col2">{file.type}：{file.name}</span>
+                                    <span className="list-col2">
+                                        <DownloadOutlined onClick={() => downloadFile(file)} style={{ marginRight: '8px', color: '#1890ff' }}/>
+                                        {file.name}
+                                    </span>
                                 </div>
                             ))
                         ) : (
@@ -224,7 +220,6 @@ function DataVisualization() {
                                     <p><strong>损伤情况：</strong>{currentProject.detectionResult?.output?.isDamage ? '有损' : '无损' || 'N/A'}</p>
                                 </Col>
                                 <Col span={12}>
-                                    <p><strong>损伤面积：</strong>{currentProject.detectionResult?.output?.damageArea || 'N/A'}</p>
                                 </Col>
                             </Row>
 

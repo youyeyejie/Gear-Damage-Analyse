@@ -16,7 +16,7 @@ const { Header, Content, Footer, Sider } = Layout;
 
 function AppContent() {
     const [collapsed, setCollapsed] = useState(false);
-    const [ selectedMenu, setSelectedMenu] = useState(() => {
+    const [selectedMenu, setSelectedMenu] = useState(() => {
         const savedMenu = sessionStorage.getItem('selectedMenu');
         return savedMenu || 'projectSettings';
     });

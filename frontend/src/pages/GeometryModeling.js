@@ -26,7 +26,7 @@ function GeometryModeling() {
 
     const handleGroupChange = (groupId) => {
         if (!currentProject.projectInfo.id) {
-            message.warn('请先创建项目');
+            message.warning('请先创建项目');
             setTimeout(() => {
                 window.location.href = '/';
             }, 500);

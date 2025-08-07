@@ -91,7 +91,7 @@ function ProjectSettings() {
 
             <div className="card">
                 <h2 style={{ marginBottom: '16px' }}>项目管理</h2>
-                <Form form={form} layout="vertical" onFinish={handleCreateProject} initialValues={{ projectPath: 'Data' }}>
+                <Form form={form} layout="vertical" onFinish={handleCreateProject} >
                     <div style={{ display: 'flex', gap: '16px' }}>
                         <Form.Item name="projectName" label="项目名称" rules={[{ required: true, message: '请输入项目名称' }]} style={{ flex: 1 }}>
                             <Input placeholder={currentProject.projectInfo.name ? `当前项目名称：${currentProject.projectInfo.name}` : "请输入项目名称"} />

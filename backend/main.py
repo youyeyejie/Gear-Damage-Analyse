@@ -75,7 +75,7 @@ def upload_file():
         return jsonify({"code": "400", "msg": "请先创建项目", "data": {}}), 400
 
     # 保存文件
-    filename = file.filename.split('.')[0] + str(int(time.time())) + '.' + file.filename.split('.')[1]
+    filename = file.filename.split('.')[0] + '_' + time.strftime('%Y%m%d%H%M%S') + '.' + file.filename.split('.')[1]
     file_path = os.path.join(full_path, filename)
     try:
         file.save(file_path)
@@ -182,11 +182,13 @@ def geometry_modeling():
         gear_group_number = input['gearGroupNumber']
         is_damage = input['isDamage']
 
-        # 模拟建模
-        time.sleep(2)
+        # 建模
+        if is_damage:
+            source_path = f"../data/model/damaged/{gear_group_number}_damage.stp"
+        else:
+            source_path = f"../data/model/undamaged/{gear_group_number}.STEP"
+
         filename = f"Model_{time.strftime('%Y%m%d%H%M%S')}.STEP"
-        # 复制 ../data/model/1.step 到 full_path 下
-        source_path = os.path.join(os.path.dirname(__file__), '../data/model/1.step')
         destination_path = os.path.join(full_path, filename)
         shutil.copy2(source_path, destination_path)
 
