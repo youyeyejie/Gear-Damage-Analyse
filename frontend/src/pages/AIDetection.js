@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Upload, message, Row, Col, Image } from 'antd';
+import { Button, Upload, message, Row, Col, Select, Image } from 'antd';
 import { DownloadOutlined, PlayCircleOutlined, PlusOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useProjectContext } from '../AppContext';
 import '../App.css';
+
+const { Option } = Select;
 
 function AIDetection() {
     const {
@@ -77,10 +79,7 @@ function AIDetection() {
                         // 删除成功，更新前端状态
                         const updatedCurrentProject = {
                             ...currentProject,
-                            uploadFileList: {
-                                ...currentProject.uploadFileList,
-                                aiDetectionImage: currentProject.uploadFileList.filter(f => f !== file)
-                            }
+                            uploadFileList: currentProject.uploadFileList.filter(f => f !== file)
                         };
                         setCurrentProject(updatedCurrentProject);
                         sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
@@ -134,9 +133,6 @@ function AIDetection() {
         setCurrentProject(updatedCurrentProject);
         sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
 
-        const images = [];
-        currentProject.uploadFileList.map(file => images.push(file.response?.data.fileName));
-
         try {
             const response = await fetch('http://localhost:5000/api/aiDetection', {
                 method: 'POST',
@@ -145,7 +141,8 @@ function AIDetection() {
                 },
                 body: JSON.stringify({
                     input: {
-                        image: images,
+                        gear_image: currentProject.uploadFileList?.[0].response?.data.fileName,
+                        model: currentProject.detectionResult.input.model,
                     },
                 })
             });
@@ -157,17 +154,21 @@ function AIDetection() {
                 // 添加报告到下载列表
                 const id = Date.now();
 
-                const heatmap = [];
-                for (let i = 0; i < resData.data.heatmap.length; i++) {
-                    const heatmapFile = {
-                        id: id + i,
-                        name: resData.data.heatmap[i].name,
-                        type: '损伤识别热力图',
-                        size: resData.data.heatmap[i].size,
-                        time: new Date().toLocaleString()
-                    };
-                    heatmap.push(heatmapFile);
-                }
+                const reportFile = {
+                    id: id,
+                    name: resData.data.report.name,
+                    type: 'AI识别报告',
+                    size: resData.data.report.size,
+                    time: new Date().toLocaleString()
+                };
+
+                const blockmapFile = {
+                    id: id + 1,
+                    name: resData.data.blockmap.name,
+                    type: '损伤识别方框图',
+                    size: resData.data.blockmap.size,
+                    time: new Date().toLocaleString()
+                };
 
                 const updatedCurrentProject = {
                     ...currentProject,
@@ -176,7 +177,7 @@ function AIDetection() {
                         status: '识别完成，待建模',
                     },
                     detectionResult: resData.data,
-                    downloadFileList: [...currentProject.downloadFileList, ...heatmap],
+                    downloadFileList: [...currentProject.downloadFileList, reportFile, blockmapFile],
                 };
                 setCurrentProject(updatedCurrentProject);
                 sessionStorage.setItem('currentProject', JSON.stringify(updatedCurrentProject));
@@ -196,7 +197,13 @@ function AIDetection() {
                         id: id + 2,
                         type: '识别',
                         operation: '新增可下载文件',
-                        description: `新增损伤识别热力图：${heatmap.map(item => item.name).join(', ')}`,
+                        description: `新增损伤识别报告：${reportFile.name}，大小：${reportFile.size}`,
+                        time: new Date().toLocaleString(),
+                    }, {
+                        id: id + 3,
+                        type: '识别',
+                        operation: '新增可下载文件',
+                        description: `新增损伤识别方框图：${blockmapFile.name}，大小：${blockmapFile.size}`,
                         time: new Date().toLocaleString(),
                     }, ...logs];
                 setLogs(updatedLogs);
@@ -229,46 +236,44 @@ function AIDetection() {
         }
     };
 
-    // 下载热力图
-    const handleDownloadHeatmap = () => {
-        if (!currentProject.detectionResult.heatmap?.length) {
+    // 下载AI预测报告
+    const handleDownloadReport = () => {
+        if (!currentProject.detectionResult.report?.name) {
             message.error('请先完成损伤识别');
             return;
         }
-        for (let i = 0; i < currentProject.detectionResult.heatmap.length; i++) {
-            downloadFile(currentProject.detectionResult.heatmap[i]);
-        }
+        downloadFile(currentProject.detectionResult.report);
     };
 
-    // 展示热力图
-    const renderHeatmap = () => {
-        if (!currentProject.detectionResult.heatmap?.length) {
+    // 下载损伤方框图
+    const handleDownloadBlockmap = () => {
+        if (!currentProject.detectionResult.blockmap?.name) {
+            message.error('请先完成损伤识别');
+            return;
+        }
+        downloadFile(currentProject.detectionResult.blockmap);
+    };
+
+    // 展示损伤方框图
+    const renderBlockmap = () => {
+        if (!currentProject.detectionResult.blockmap?.name) {
             return (
                 <div className="empty-state">
                     <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-                    <p style={{ marginLeft: '16px' }}>暂无损伤热力图预览</p>
+                    <p style={{ marginLeft: '16px' }}>暂无损伤方框图预览</p>
                 </div>
             );
         }
 
-        const heatmapImages = currentProject.detectionResult.heatmap.map((heatmap, index) => {
-            const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${heatmap.name}`;
-            return (
-                <Col span={12}>
-                    <div key={index} style={{ width: '100%', textAlign: 'center', marginBottom: '16px' }}>
-                        <Image
-                            src={imageUrl}
-                            alt={`热力图 ${index + 1}`}
-                            style={{ maxWidth: '100%', maxHeight: '300px' }}
-                        />
-                    </div>
-                </Col>
-            );
-        });
+        const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${currentProject.detectionResult.blockmap.name}`;
         return (
-            <Row gutter={[16, 16]}>
-                {heatmapImages}
-            </Row>
+            <div style={{ width: '100%', textAlign: 'center', marginBottom: '16px' }}>
+                <Image
+                    src={imageUrl}
+                    alt={`损伤方框图`}
+                    style={{ maxWidth: '100%', maxHeight: '300px' }}
+                />
+            </div>
         );
     };
 
@@ -286,14 +291,17 @@ function AIDetection() {
                     fileList={currentProject.uploadFileList}
                     onPreview={handlePreview}
                     onRemove={handleRemoveFile}
-                    accept='image/*'
+                    accept='.jpg,.jpeg,.png,.JPG,.JPEG,.PNG'
                 >
                     <div>
                         <PlusOutlined />
                         <div className="ant-upload-text">上传图片</div>
                     </div>
                 </Upload>
-
+                <span style={{ fontSize: '12px', color: '#666', marginTop: '16px' }}>
+                    请上传一张齿轮损伤图片，要求齿面平行于镜头，且画面中仅包含单个齿面，光照均匀无强反光。<br/>
+                    若上传多张图片，仅识别第一张图片。
+                </span>
                 {previewImage && (
                     <Image
                         wrapperStyle={{ display: 'none' }}
@@ -307,29 +315,26 @@ function AIDetection() {
                 )}
             </div>
 
-            {/* <div className="card" style={{ marginTop: '24px' }}>
+            <div className="card" style={{ marginTop: '24px' }}>
                 <h2 style={{ marginBottom: '16px' }}>参数设置</h2>
                 <div className="precision-selector" style={{ display: 'flex', alignItems: 'center' }}>
-                    <label style={{ width: '120px', marginRight: '16px' }}>识别精度设置:</label>
+                    <label style={{ width: '120px', marginRight: '16px' }}>识别模型设置:</label>
                     <Select
-                        defaultValue={currentProject.detectionResult.input.precision || 'low'}
+                        defaultValue={currentProject.detectionResult.input.model || 'yolov5s'}
                         style={{ flex: 1, maxWidth: '300px' }}
-                        onChange={value => setPrecision(value)}
-                        value={precision}
+                        disabled
                     >
-                        <Option value="high">高精度</Option>
-                        <Option value="medium">中精度</Option>
-                        <Option value="low">低精度</Option>
+                        <Option value="yolov5s">yolov5s(默认)</Option>
                     </Select>
                 </div>
-            </div> */}
+            </div>
 
             <div className="button-group" style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-start' }}>
                 <Button
                     type="primary"
                     icon={<PlayCircleOutlined />}
                     onClick={handleStartDetection}
-                    loading={isDetecting}
+                    loading={isDetecting || currentProject.projectInfo.status === '识别中'}
                     style={{ marginRight: '16px' }}
                 >
                     开始识别
@@ -337,25 +342,80 @@ function AIDetection() {
                 <Button
                     type="primary"
                     icon={<DownloadOutlined />}
-                    onClick={handleDownloadHeatmap}
-                    hidden={!currentProject.detectionResult.heatmap?.length}
+                    onClick={handleDownloadReport}
+                    hidden={!currentProject.detectionResult.report?.name || isDetecting || currentProject.projectInfo.status === '识别中'}
                     style={{ marginRight: '16px' }}
                 >
-                    下载热力图
+                    下载损伤识别报告
+                </Button>
+                <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={handleDownloadBlockmap}
+                    hidden={!currentProject.detectionResult.blockmap?.name || isDetecting || currentProject.projectInfo.status === '识别中'}
+                    style={{ marginRight: '16px' }}
+                >
+                    下载损伤方框图
                 </Button>
             </div>
 
-            {currentProject.detectionResult.heatmap?.length > 0 && !isDetecting &&(
+            {currentProject.detectionResult.report?.name && !isDetecting &&(
                 <div className="card" style={{ marginTop: '24px' }}>
                     <h2 style={{ marginBottom: '16px' }}>识别结果</h2>
-                    <div className="card" style={{ height: '100%', padding: '16px' }}>
-                        <h3 style={{ marginBottom: '16px' }}>识别结果</h3>
-                        <p>损伤情况：{currentProject.detectionResult.output.isDamage ? '有损' : '无损'}</p>
-                    </div>
-                    <div className="card" style={{ height: '100%', padding: '16px' }}>
-                        <h3 style={{ marginBottom: '16px' }}>损伤热力图</h3>
-                        {renderHeatmap()}
-                    </div>
+                    <Row gutter={[16, 16]}>
+                        <Col span={12}>
+                            <div className="card" style={{ height: '100%', padding: '16px' }}>
+                                <h3 style={{ marginBottom: '16px' }}>损伤信息</h3>
+                                <p>
+                                    <strong>分析结果可信度：</strong>
+                                    {currentProject.detectionResult.output.isValid === 1  ? "分析有效，可信度高" 
+                                    : "分析无效 - 未检测到明确损伤。请确保齿面平行于镜头，且画面中仅包含单个齿面，光照均匀无强反光"
+                                    }
+                                </p>
+                                {currentProject.detectionResult.output.isValid === 1 ? (
+                                    <div>
+                                    <p>
+                                        <strong>磨损状况评估：</strong>
+                                        {parseFloat(currentProject.detectionResult.output.abrasionRate).toFixed(1)}% 
+                                        {parseFloat(currentProject.detectionResult.output.abrasionRate) > 80 ? "（严重磨损，请立即停机检修，更换齿轮，检查润滑系统）"  
+                                        : parseFloat(currentProject.detectionResult.output.abrasionRate) > 60 ? "（中度磨损，建议缩短检修周期，考虑更换润滑油）" 
+                                        : "（轻微磨损，可接受，建议按常规维护计划进行）"}
+                                    </p>
+                                    <p><strong>齿面剥落分析：</strong>{parseFloat(currentProject.detectionResult.output.peelingRate).toFixed(1)}% 
+                                        {parseFloat(currentProject.detectionResult.output.peelingRate) > 30 ? "（严重剥落，风险较大，建议立即更换齿轮，分析失效根本原因）" 
+                                        : parseFloat(currentProject.detectionResult.output.peelingRate) > 10 ? "（中度剥落，建议立即检查齿轮是否正常）" 
+                                        : "（轻微剥落，可接受，建议按常规维护计划进行）"}
+                                    </p>
+                                    <p><strong>压伤程度测量：</strong>{parseFloat(currentProject.detectionResult.output.scuffingRate).toFixed(1)}% 
+                                        {parseFloat(currentProject.detectionResult.output.scuffingRate) > 80 ? "（严重压伤，风险较大，建议立即检修，更换齿轮，检查运行条件）" 
+                                        : parseFloat(currentProject.detectionResult.output.scuffingRate) > 60 ? "（中度压伤，建议检查润滑系统，考虑调整工作参数）" 
+                                        : "（轻微压伤，可接受，建议按常规维护计划进行）"}
+                                    </p>
+                                    <p><strong>点蚀分布情况：</strong>{parseFloat(currentProject.detectionResult.output.pittingRate).toFixed(1)}% 
+                                        {parseFloat(currentProject.detectionResult.output.pittingRate) > 60 ? "（广泛点蚀，风险较高，建议考虑更换齿轮，检查设计参数是否合理）" 
+                                        : parseFloat(currentProject.detectionResult.output.pittingRate) > 30 ? "（局部点蚀，建议加强监测，优化润滑）" 
+                                        : "（初期点蚀，可接受，建议按常规维护计划进行）"}
+                                    </p>
+                                    <p><strong>综合损伤评级：</strong>
+                                        {Math.max(
+                                            parseFloat(currentProject.detectionResult.output.abrasionRate),
+                                            parseFloat(currentProject.detectionResult.output.peelingRate) * 1.5,
+                                            parseFloat(currentProject.detectionResult.output.scuffingRate),
+                                            parseFloat(currentProject.detectionResult.output.pittingRate)
+                                        ) > 80 ? "高风险" : "风险较低，可接受"} 
+                                    </p>
+                                    </div>
+                                ) : null}
+                                <p><strong>识别模型：</strong>{currentProject.detectionResult.input.model}</p>
+                            </div>
+                        </Col>
+                        <Col span={12}>
+                            <div className="card" style={{ height: '100%', padding: '16px' }}>
+                                <h3 style={{ marginBottom: '16px' }}>损伤方框图</h3>
+                                {renderBlockmap()}
+                            </div>
+                        </Col>
+                    </Row>
                 </div>
             )}
         </div>

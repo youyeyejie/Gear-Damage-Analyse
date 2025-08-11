@@ -48,35 +48,26 @@ function DataVisualization() {
         { title: '值', dataIndex: 'value', key: 'value' }
     ];
 
-    // 展示热力图
-    const renderHeatmap = () => {
-        if (!currentProject.detectionResult.heatmap?.length) {
+    // 展示损伤方框图
+    const renderBlockmap = () => {
+        if (!currentProject.detectionResult.blockmap?.name) {
             return (
                 <div className="empty-state">
                     <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-                    <p style={{ marginLeft: '16px' }}>暂无损伤热力图预览</p>
+                    <p style={{ marginLeft: '16px' }}>暂无损伤方框图预览</p>
                 </div>
             );
         }
 
-        const heatmapImages = currentProject.detectionResult.heatmap.map((heatmap, index) => {
-            const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${heatmap.name}`;
-            return (
-                <Col span={12}>
-                    <div key={index} style={{ width: '100%', textAlign: 'center', marginBottom: '16px' }}>
-                        <Image
-                            src={imageUrl}
-                            alt={`热力图 ${index + 1}`}
-                            style={{ maxWidth: '100%', maxHeight: '300px' }}
-                        />
-                    </div>
-                </Col>
-            );
-        });
+        const imageUrl = `http://localhost:5000/api/downloadFile?fileName=${currentProject.detectionResult.blockmap.name}`;
         return (
-            <Row gutter={[16, 16]}>
-                {heatmapImages}
-            </Row>
+            <div style={{ width: '100%', textAlign: 'center', marginBottom: '16px' }}>
+                <Image
+                    src={imageUrl}
+                    alt={`损伤方框图`}
+                    style={{ maxWidth: '100%', maxHeight: '900px' }}
+                />
+            </div>
         );
     };
 
@@ -250,22 +241,62 @@ function DataVisualization() {
             {/* 智能识别面板 */}
             {activeTabKey === 'ai' && (
                 <div className="card">
-                    {currentProject.detectionResult?.heatmap?.length > 0 ? ( 
+                    {currentProject.detectionResult?.report?.name ? ( 
                         <>
                             <h2 style={{ marginBottom: '16px' }}>识别结果</h2>
                             <Row gutter={[16, 16]}>
                                 <Col span={12}>
-                                    <p><strong>损伤情况：</strong>{currentProject.detectionResult?.output?.isDamage ? '有损' : '无损' || 'N/A'}</p>
+                                    <p><strong>分析结果可信度：</strong>
+                                        {currentProject.detectionResult.output.isValid === 1  ? "分析有效，可信度高" 
+                                        : "分析无效 - 未检测到明确损伤。请确保齿面平行于镜头，且画面中仅包含单个齿面，光照均匀无强反光"
+                                        }
+                                    </p>
+                                    {currentProject.detectionResult.output.isValid === 1 ? ( <>
+                                    <p><strong>齿轮损伤情况：</strong>{currentProject.detectionResult?.output?.isDamage ? '有损' : '无损' || 'N/A'}</p>
+                                    <p><strong>综合损伤评级：</strong>
+                                        {Math.max(
+                                            parseFloat(currentProject.detectionResult.output.abrasionRate),
+                                            parseFloat(currentProject.detectionResult.output.peelingRate) * 1.5,
+                                            parseFloat(currentProject.detectionResult.output.scuffingRate),
+                                            parseFloat(currentProject.detectionResult.output.pittingRate)
+                                        ) > 80 ? "高风险" : "风险较低，可接受"} 
+                                    </p>
+                                    </> ) : null }
+                                    <p><strong>识别模型：</strong>{currentProject.detectionResult.input.model}</p>
                                 </Col>
                                 <Col span={12}>
+                                    {currentProject.detectionResult.output.isValid === 1 ? ( <>
+                                    <p>
+                                        <strong>磨损状况评估：</strong>
+                                        {parseFloat(currentProject.detectionResult.output.abrasionRate).toFixed(1)}% 
+                                        {parseFloat(currentProject.detectionResult.output.abrasionRate) > 80 ? "（严重磨损，请立即停机检修，更换齿轮，检查润滑系统）"  
+                                        : parseFloat(currentProject.detectionResult.output.abrasionRate) > 60 ? "（中度磨损，建议缩短检修周期，考虑更换润滑油）" 
+                                        : "（轻微磨损，可接受，建议按常规维护计划进行）"}
+                                    </p>
+                                    <p><strong>齿面剥落分析：</strong>{parseFloat(currentProject.detectionResult.output.peelingRate).toFixed(1)}% 
+                                        {parseFloat(currentProject.detectionResult.output.peelingRate) > 30 ? "（严重剥落，风险较大，建议立即更换齿轮，分析失效根本原因）" 
+                                        : parseFloat(currentProject.detectionResult.output.peelingRate) > 10 ? "（中度剥落，建议立即检查齿轮是否正常）" 
+                                        : "（轻微剥落，可接受，建议按常规维护计划进行）"}
+                                    </p>
+                                    <p><strong>压伤程度测量：</strong>{parseFloat(currentProject.detectionResult.output.scuffingRate).toFixed(1)}% 
+                                        {parseFloat(currentProject.detectionResult.output.scuffingRate) > 80 ? "（严重压伤，风险较大，建议立即检修，更换齿轮，检查运行条件）" 
+                                        : parseFloat(currentProject.detectionResult.output.scuffingRate) > 60 ? "（中度压伤，建议检查润滑系统，考虑调整工作参数）" 
+                                        : "（轻微压伤，可接受，建议按常规维护计划进行）"}
+                                    </p>
+                                    <p><strong>点蚀分布情况：</strong>{parseFloat(currentProject.detectionResult.output.pittingRate).toFixed(1)}% 
+                                        {parseFloat(currentProject.detectionResult.output.pittingRate) > 60 ? "（广泛点蚀，风险较高，建议考虑更换齿轮，检查设计参数是否合理）" 
+                                        : parseFloat(currentProject.detectionResult.output.pittingRate) > 30 ? "（局部点蚀，建议加强监测，优化润滑）" 
+                                        : "（初期点蚀，可接受，建议按常规维护计划进行）"}
+                                    </p>
+                                    </> ) : null}
                                 </Col>
                             </Row>
 
                             <Divider style={{ margin: '16px 0' }} />
 
-                            <h2 style={{ marginBottom: '16px' }}>热力图分析</h2>
+                            <h2 style={{ marginBottom: '16px' }}>损伤方框图</h2>
                             <div className="card" style={{ height: '100%', padding: '16px' }}>
-                                {renderHeatmap()}
+                                {renderBlockmap()}
                             </div>
                         </>
                     ) : (

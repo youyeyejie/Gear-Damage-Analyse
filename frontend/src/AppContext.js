@@ -16,12 +16,25 @@ const ProjectManager = {
     uploadFileList: [],
     detectionResult: {
         input: {
-            image: [],
+            gear_image: null,
+            model: "yolov5s",
         },
         output: {
             isDamage: null,
+            isValid: null,
+            abrasionRate: null,
+            peelingRate: null,
+            scuffingRate: null,
+            pittingRate: null,
         },
-        heatmap: [],
+        report: {
+            name: null,
+            size: null,
+        },
+        blockmap: {
+            name: null,
+            size: null,
+        }
     },
     selectedGearGroup: {
         groupNumber: null,

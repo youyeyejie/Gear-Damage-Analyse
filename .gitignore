@@ -7,3 +7,6 @@
 # backend
 /backend/venv
 /backend/Data
+/backend/gear_fault_yolo/__pycache__
+/backend/gear_fault_yolo/cache
+/backend/gear_fault_yolo/yolov5/__pycache__

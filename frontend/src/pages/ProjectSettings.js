@@ -157,7 +157,7 @@ function ProjectSettings() {
                         {
                             key: 'downloads',
                             label: '下载中心',
-                            children: <Table columns={downloadColumns} dataSource={currentProject.downloadFileList} rowKey="id" pagination={{ pageSize: 5 }} />,
+                            children: <Table columns={downloadColumns} dataSource={currentProject.downloadFileList} rowKey="id" pagination={{ pageSize: 10 }} />,
                         },
                     ]}
                 />

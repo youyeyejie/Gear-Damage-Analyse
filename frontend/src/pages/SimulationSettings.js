@@ -25,7 +25,7 @@ function SimulationSettings() {
     }, []); // eslint-disable-line
 
     const handleStartSimulation = async () => {
-        if (!currentProject.detectionResult.heatmap?.length) {
+        if (!currentProject.detectionResult.blockmap?.name) {
             message.warning('请先进行损伤识别');
             setTimeout(() => {
                 window.location.href = '/ai-detection';
@@ -280,7 +280,7 @@ function SimulationSettings() {
                     type="primary" 
                     icon={<DownloadOutlined />} 
                     onClick={handleDownloadStressImage}
-                    hidden={!currentProject.simulationResult.stress_cloudmap?.name}
+                    hidden={!currentProject.simulationResult.stress_cloudmap?.name || isSimulating}
                 >
                     下载应力云图
                 </Button>
@@ -289,7 +289,7 @@ function SimulationSettings() {
                     type="primary" 
                     icon={<DownloadOutlined />} 
                     onClick={handleDownloadRemainLifeImage}
-                    hidden={!currentProject.simulationResult.remain_life_cloudmap?.name}
+                    hidden={!currentProject.simulationResult.remain_life_cloudmap?.name || isSimulating}
                 >
                     下载剩余寿命云图
                 </Button>

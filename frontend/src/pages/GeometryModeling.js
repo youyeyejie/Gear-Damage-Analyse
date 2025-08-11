@@ -45,7 +45,7 @@ function GeometryModeling() {
             message.warning('请先选择齿轮配置组');
             return;
         }
-        if (!currentProject.detectionResult.heatmap?.length) {
+        if (currentProject.detectionResult.output.isValid === -1) {
             message.warning('请先进行损伤识别');
             setTimeout(() => {
                 window.location.href = '/ai-detection';
@@ -223,7 +223,7 @@ function GeometryModeling() {
                     type="primary"
                     icon={<DownloadOutlined />}
                     onClick={handleDownloadModel}
-                    hidden={!currentProject.modelingResult.model.name}
+                    hidden={!currentProject.modelingResult.model.name || isModeling}
                     style={{ marginRight: '16px' }}
                 >
                     下载几何模型 (.STEP)
