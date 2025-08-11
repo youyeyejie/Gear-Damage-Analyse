@@ -17,7 +17,6 @@ CORS(app)  # 解决跨域问题
 
 
 full_path = ''
-full_path = 'Data/test'
 
 @app.route('/api/createProject', methods=['POST'])
 def create_project():
