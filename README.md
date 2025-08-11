@@ -49,7 +49,18 @@ Gear Damage Analyse
             └── DataVisualization.js
 ```
 
-## 后端运行步骤
+## 项目运行
+
+我们提供了一个脚本 `start_all.bat` 来一键启动前后端服务。您可以在克隆项目后，在根目录下运行该脚本来启动项目。
+
+### 一键启动脚本
+
+```bash
+start_all.bat
+```
+
+
+### 后端运行步骤
 1. 进入后端目录
     ```bash
     cd backend
@@ -74,7 +85,7 @@ Gear Damage Analyse
     python main.py
     ```
 
-## 前端运行步骤
+### 前端运行步骤
 1. 进入前端目录
     ```bash
     cd frontend
