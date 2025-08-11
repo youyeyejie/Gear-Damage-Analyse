@@ -1,0 +1,6 @@
+names:
+- Surface
+nc: 1
+path: C:\Users\29383\Desktop\study\TiaoZhanBei\gear_fault_yolo\
+train: C:\Users\29383\Desktop\study\TiaoZhanBei\gear_fault_yolo\images
+val: C:\Users\29383\Desktop\study\TiaoZhanBei\gear_fault_yolo\images

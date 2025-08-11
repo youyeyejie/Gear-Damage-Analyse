@@ -1,0 +1,30 @@
+######################### 文件夹设置  #########################
+
+images_path:              ./gear_images_dataset
+metallurgical_path:       ./gear_images_dataset/metallurgical
+normal_path:              ./gear_images_dataset/normal
+labels_path:              ./labelimages
+result_path:              ./result
+
+######################### 数据集设置  #########################
+
+train:                    ./gear_images_dataset/metallurgical
+val:                      ./gear_images_dataset/normal
+nc:                       4
+names:                    ['擦伤', '剥落', '压伤', '点蚀']
+
+########################## 模型设置 ##########################
+# 模型设置和数据增强设置还没有接入，现在不会有用。
+device:                   cuda
+epochs:                   100
+batch_size:               8
+img_size:                 416
+lr0:                      0.01 # 初始学习率
+weight_decay:             0.0005
+hsv_h:                    0.015 # 色调
+hsv_s:                    0.3  # 饱和度
+hsv_v:                    0.4  # 亮度
+translate:                0.1  # 平移增强
+scale:                    0.5  # 缩放增强
+mosaic:                   1.0  # 马赛克增强
+rect:                     False
