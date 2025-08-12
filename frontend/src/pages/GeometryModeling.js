@@ -115,7 +115,7 @@ function GeometryModeling() {
                         id: id + 1,
                         type: '建模',
                         operation: '新增可下载文件',
-                        description: `新增几何模型：${modelFile.name}`,
+                        description: `新增几何模型：${modelFile.name}，大小：${modelFile.size}`,
                         time: new Date().toLocaleString(),
                     }, ...logs];
                 setLogs(updatedLogs);
