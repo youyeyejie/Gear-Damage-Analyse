@@ -342,6 +342,7 @@ def geometry_modeling():
             'size': "{:.2f}KB".format(os.path.getsize(destination_path) / 1024),
         }
 
+        time.sleep(3)
         return jsonify({
             "code": "200",
             "msg": "几何建模成功",
@@ -404,6 +405,7 @@ def simulation():
             'size': "{:.2f}KB".format(os.path.getsize(remain_life_cloudmap_destination_path) / 1024),
         }
 
+        time.sleep(3)
         return jsonify({
             "code": "200",
             "msg": "仿真成功",

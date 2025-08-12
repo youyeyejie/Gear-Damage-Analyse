@@ -3,9 +3,11 @@
 # frontend
 /frontend/node_modules
 /frontend/build
+/frontend/frontend.log
 
 # backend
 /backend/venv
+/backend/__pycache__
 /backend/Data
 /backend/gear_fault_yolo/__pycache__
 /backend/gear_fault_yolo/cache

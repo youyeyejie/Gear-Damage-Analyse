@@ -45,4 +45,5 @@ tzdata==2025.2
 ultralytics==8.3.176
 ultralytics-thop==2.0.15
 urllib3==2.5.0
+waitress==3.0.2
 Werkzeug==2.0.1
